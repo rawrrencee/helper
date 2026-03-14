@@ -231,7 +231,7 @@ function toggleCustomFrequency() {
 
             <!-- Scheduled Medications -->
             <div>
-                <div class="mb-4 flex items-center justify-between">
+                <div class="mb-4 flex flex-wrap items-center justify-between gap-4">
                     <h2 class="text-xl font-semibold">Scheduled Medications</h2>
                     <Button v-if="isAdmin" @click="openAddMedicationDialog">
                         <i class="pi pi-plus mr-1" /> Add Medication

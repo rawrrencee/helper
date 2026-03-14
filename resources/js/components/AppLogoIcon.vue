@@ -25,13 +25,13 @@ defineProps<Props>();
             d="M32 56C28 52 6 36 6 22c0-8 6-14 13.5-14C24 8 28 10.5 32 16c4-5.5 8-8 12.5-8C52 8 58 14 58 22c0 14-22 30-26 34Z"
         />
         <!-- Left eye -->
-        <ellipse cx="24" cy="26" rx="2.5" ry="3" fill="oklch(0.95 0 0)" />
+        <ellipse cx="24" cy="26" rx="2.5" ry="3" class="fill-gray-600 dark:fill-gray-300" />
         <!-- Right eye -->
-        <ellipse cx="40" cy="26" rx="2.5" ry="3" fill="oklch(0.95 0 0)" />
+        <ellipse cx="40" cy="26" rx="2.5" ry="3" class="fill-gray-600 dark:fill-gray-300" />
         <!-- Smile -->
         <path
             fill="none"
-            stroke="oklch(0.95 0 0)"
+            class="stroke-gray-600 dark:stroke-gray-300"
             stroke-width="2.5"
             stroke-linecap="round"
             d="M25 35c2.5 3.5 9.5 3.5 14 0"

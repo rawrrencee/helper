@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
+import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import Button from 'primevue/button';
 import { dashboard, login } from '@/routes';
 </script>
@@ -16,9 +17,12 @@ import { dashboard, login } from '@/routes';
 
         <div class="relative z-10">
             <header class="flex items-center justify-between px-6 py-4 lg:px-8">
-                <span class="bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-xl font-bold text-transparent dark:from-violet-400 dark:to-fuchsia-400">
-                    Helper
-                </span>
+                <div class="flex items-center gap-2">
+                    <AppLogoIcon class="size-7 text-violet-600 dark:text-violet-400" />
+                    <span class="bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-xl font-bold text-transparent dark:from-violet-400 dark:to-fuchsia-400">
+                        Helper
+                    </span>
+                </div>
                 <nav>
                     <Link v-if="$page.props.auth.user" :href="dashboard()">
                         <Button label="Dashboard" severity="secondary" />

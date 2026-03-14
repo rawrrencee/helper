@@ -19,7 +19,6 @@ type UpcomingAppointment = {
 
 type AdminData = {
     role: 'admin';
-    totalHelpers: number;
     recentPayments: {
         id: number;
         month: number;
@@ -83,6 +82,18 @@ function formatFrequency(freq: string): string {
     return `${h12}:${m} ${ampm}`;
 }
 
+function getFrequencySeverity(freq: string): string {
+    switch (freq) {
+        case 'After Breakfast': return 'success';
+        case 'After Lunch': return 'warn';
+        case 'After Dinner': return 'danger';
+        case 'Before Sleep': return 'contrast';
+        case '2 Times a Day':
+        case '3 Times a Day': return 'secondary';
+        default: return /^\d{2}:\d{2}$/.test(freq) ? 'info' : 'info';
+    }
+}
+
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 </script>
 
@@ -95,14 +106,7 @@ const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
             <template v-if="dashboardData.role === 'admin'">
                 <h1 class="text-2xl font-semibold">Admin Dashboard</h1>
 
-                <div class="grid gap-4 md:grid-cols-3">
-                    <Card>
-                        <template #title>Total Helpers</template>
-                        <template #content>
-                            <div class="text-3xl font-bold">{{ (dashboardData as AdminData).totalHelpers }}</div>
-                        </template>
-                    </Card>
-
+                <div class="grid gap-4 md:grid-cols-2">
                     <Card>
                         <template #title>Unpaid This Month</template>
                         <template #content>
@@ -119,28 +123,16 @@ const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
                     </Card>
                 </div>
 
-                <div class="grid gap-4 md:grid-cols-2">
-                    <Link href="/helpers/create">
-                        <Card class="cursor-pointer transition hover:shadow-md">
-                            <template #title>
-                                <span class="flex items-center gap-2"><i class="pi pi-plus-circle"></i> Add Helper</span>
-                            </template>
-                            <template #content>
-                                <p class="text-sm text-muted-foreground">Register a new domestic worker</p>
-                            </template>
-                        </Card>
-                    </Link>
-                    <Link href="/salary-payments/create">
-                        <Card class="cursor-pointer transition hover:shadow-md">
-                            <template #title>
-                                <span class="flex items-center gap-2"><i class="pi pi-dollar"></i> Create Salary Record</span>
-                            </template>
-                            <template #content>
-                                <p class="text-sm text-muted-foreground">Record a new salary payment</p>
-                            </template>
-                        </Card>
-                    </Link>
-                </div>
+                <Link href="/salary-payments/create">
+                    <Card class="cursor-pointer transition hover:shadow-md">
+                        <template #title>
+                            <span class="flex items-center gap-2"><i class="pi pi-dollar"></i> Create Salary Record</span>
+                        </template>
+                        <template #content>
+                            <p class="text-sm text-muted-foreground">Record a new salary payment</p>
+                        </template>
+                    </Card>
+                </Link>
 
                 <Card v-if="(dashboardData as AdminData).recentPayments.length > 0">
                     <template #title>Recent Salary Payments</template>
@@ -189,7 +181,7 @@ const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
                     <Card>
                         <template #title>Family Info</template>
                         <template #content>
-                            <div v-if="(dashboardData as AdminData).familyInformation" class="prose dark:prose-invert max-w-none text-sm line-clamp-4" v-html="(dashboardData as AdminData).familyInformation" />
+                            <div v-if="(dashboardData as AdminData).familyInformation" class="prose prose-sm dark:prose-invert max-w-none [&_p]:my-1" v-html="(dashboardData as AdminData).familyInformation" />
                             <p v-else class="text-sm text-muted-foreground">No family information available.</p>
                             <div class="mt-3">
                                 <Link href="/family-info">
@@ -207,35 +199,6 @@ const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 
                 <template v-if="(dashboardData as HelperData).helper">
                     <Card>
-                        <template #title>My Profile</template>
-                        <template #content>
-                            <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
-                                <div>
-                                    <span class="text-sm text-muted-foreground">Name</span>
-                                    <p class="font-medium">{{ (dashboardData as HelperData).helper!.name }}</p>
-                                </div>
-                                <div>
-                                    <span class="text-sm text-muted-foreground">FIN</span>
-                                    <p class="font-medium">{{ (dashboardData as HelperData).helper!.fin }}</p>
-                                </div>
-                                <div>
-                                    <span class="text-sm text-muted-foreground">Nationality</span>
-                                    <p class="font-medium">{{ (dashboardData as HelperData).helper!.nationality ?? '-' }}</p>
-                                </div>
-                                <div>
-                                    <span class="text-sm text-muted-foreground">Monthly Salary</span>
-                                    <p class="font-medium">${{ Number((dashboardData as HelperData).helper!.monthly_salary).toFixed(2) }}</p>
-                                </div>
-                            </div>
-                            <div class="mt-4">
-                                <Link :href="`/helpers/${(dashboardData as HelperData).helper!.id}`">
-                                    <Button label="View Full Profile" severity="secondary" size="small" />
-                                </Link>
-                            </div>
-                        </template>
-                    </Card>
-
-                    <Card>
                         <template #title>Medications Schedule</template>
                         <template #content>
                             <div v-if="(dashboardData as HelperData).patientMedications.length > 0" class="space-y-6">
@@ -248,10 +211,11 @@ const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
                                     </div>
                                     <div class="space-y-2">
                                         <div v-for="med in group.medications" :key="med.id" class="flex items-center gap-3 rounded border p-2">
-                                            <Tag :value="formatFrequency(med.frequency)" severity="info" />
+                                            <Tag :value="formatFrequency(med.frequency)" :severity="getFrequencySeverity(med.frequency)" />
                                             <div>
                                                 <span class="text-sm font-medium">{{ med.name }}</span>
                                                 <span v-if="med.dosage" class="ml-1 text-sm text-muted-foreground">({{ med.dosage }})</span>
+                                                <p v-if="med.notes" class="text-xs text-muted-foreground">{{ med.notes }}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -271,11 +235,46 @@ const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
                                                 <div>
                                                     <span class="text-sm">{{ med.name }}</span>
                                                     <span v-if="med.dosage" class="ml-1 text-sm text-muted-foreground">({{ med.dosage }})</span>
+                                                    <p v-if="med.notes" class="text-xs text-muted-foreground">{{ med.notes }}</p>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </template>
+                    </Card>
+
+                    <Card>
+                        <template #title>Upcoming Appointments</template>
+                        <template #content>
+                            <div v-if="(dashboardData as HelperData).upcomingAppointments.length > 0" class="space-y-3">
+                                <div v-for="appt in (dashboardData as HelperData).upcomingAppointments" :key="appt.id" class="flex items-center justify-between rounded border p-2">
+                                    <div>
+                                        <p class="text-sm font-medium">{{ appt.title }}</p>
+                                        <p v-if="appt.doctor" class="text-xs text-muted-foreground">Dr. {{ appt.doctor }}</p>
+                                    </div>
+                                    <span class="text-xs text-muted-foreground">{{ new Date(appt.appointment_date).toLocaleDateString('en-SG', { day: 'numeric', month: 'short' }) }}</span>
+                                </div>
+                            </div>
+                            <p v-else class="text-sm text-muted-foreground">No upcoming appointments.</p>
+                            <div class="mt-3">
+                                <Link href="/appointments">
+                                    <Button label="View All" severity="secondary" size="small" />
+                                </Link>
+                            </div>
+                        </template>
+                    </Card>
+
+                    <Card>
+                        <template #title>Family Info</template>
+                        <template #content>
+                            <div v-if="(dashboardData as HelperData).familyInformation" class="prose prose-sm dark:prose-invert max-w-none [&_p]:my-1" v-html="(dashboardData as HelperData).familyInformation" />
+                            <p v-else class="text-sm text-muted-foreground">No family information available.</p>
+                            <div class="mt-3">
+                                <Link href="/family-info">
+                                    <Button label="View" severity="secondary" size="small" />
+                                </Link>
                             </div>
                         </template>
                     </Card>
@@ -318,41 +317,34 @@ const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
                         </Card>
                     </div>
 
-                    <div class="grid gap-4 md:grid-cols-2">
-                        <Card>
-                            <template #title>Upcoming Appointments</template>
-                            <template #content>
-                                <div v-if="(dashboardData as HelperData).upcomingAppointments.length > 0" class="space-y-3">
-                                    <div v-for="appt in (dashboardData as HelperData).upcomingAppointments" :key="appt.id" class="flex items-center justify-between rounded border p-2">
-                                        <div>
-                                            <p class="text-sm font-medium">{{ appt.title }}</p>
-                                            <p v-if="appt.doctor" class="text-xs text-muted-foreground">Dr. {{ appt.doctor }}</p>
-                                        </div>
-                                        <span class="text-xs text-muted-foreground">{{ new Date(appt.appointment_date).toLocaleDateString('en-SG', { day: 'numeric', month: 'short' }) }}</span>
-                                    </div>
+                    <Card>
+                        <template #title>My Profile</template>
+                        <template #content>
+                            <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+                                <div>
+                                    <span class="text-sm text-muted-foreground">Name</span>
+                                    <p class="font-medium">{{ (dashboardData as HelperData).helper!.name }}</p>
                                 </div>
-                                <p v-else class="text-sm text-muted-foreground">No upcoming appointments.</p>
-                                <div class="mt-3">
-                                    <Link href="/appointments">
-                                        <Button label="View All" severity="secondary" size="small" />
-                                    </Link>
+                                <div>
+                                    <span class="text-sm text-muted-foreground">FIN</span>
+                                    <p class="font-medium">{{ (dashboardData as HelperData).helper!.fin }}</p>
                                 </div>
-                            </template>
-                        </Card>
-
-                        <Card>
-                            <template #title>Family Info</template>
-                            <template #content>
-                                <div v-if="(dashboardData as HelperData).familyInformation" class="prose dark:prose-invert max-w-none text-sm line-clamp-4" v-html="(dashboardData as HelperData).familyInformation" />
-                                <p v-else class="text-sm text-muted-foreground">No family information available.</p>
-                                <div class="mt-3">
-                                    <Link href="/family-info">
-                                        <Button label="View" severity="secondary" size="small" />
-                                    </Link>
+                                <div>
+                                    <span class="text-sm text-muted-foreground">Nationality</span>
+                                    <p class="font-medium">{{ (dashboardData as HelperData).helper!.nationality ?? '-' }}</p>
                                 </div>
-                            </template>
-                        </Card>
-                    </div>
+                                <div>
+                                    <span class="text-sm text-muted-foreground">Monthly Salary</span>
+                                    <p class="font-medium">${{ Number((dashboardData as HelperData).helper!.monthly_salary).toFixed(2) }}</p>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <Link :href="`/helpers/${(dashboardData as HelperData).helper!.id}`">
+                                    <Button label="View Full Profile" severity="secondary" size="small" />
+                                </Link>
+                            </div>
+                        </template>
+                    </Card>
                 </template>
 
                 <Card v-else>

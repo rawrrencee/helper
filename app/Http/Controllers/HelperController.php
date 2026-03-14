@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ResetHelperPasswordRequest;
 use App\Http\Requests\StoreHelperRequest;
+use App\Http\Requests\UpdateHelperBankDetailsRequest;
 use App\Http\Requests\UpdateHelperRequest;
 use App\Models\Helper;
 use App\Models\User;
@@ -132,6 +133,30 @@ class HelperController extends Controller
         $helper->user->delete();
 
         return to_route('helpers.index')->with('success', 'Helper deleted.');
+    }
+
+    /**
+     * Update the authenticated helper's bank details.
+     */
+    public function updateBankDetails(UpdateHelperBankDetailsRequest $request): RedirectResponse
+    {
+        $helper = $request->user()->helper;
+        $validated = $request->validated();
+
+        if ($validated['payment_method'] === 'bank_transfer') {
+            $helper->update([
+                'bank_name' => $validated['bank_name'],
+                'bank_account_no' => $validated['bank_account_no'],
+                'paynow_enabled' => false,
+            ]);
+        } else {
+            $helper->update([
+                'paynow_enabled' => true,
+                'paynow_identifier' => $validated['paynow_identifier'],
+            ]);
+        }
+
+        return back()->with('success', 'Bank details updated.');
     }
 
     /**

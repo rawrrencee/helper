@@ -39,10 +39,22 @@ class SalaryPaymentController extends Controller
 
         $helpers = $request->user()->isAdmin() ? Helper::query()->orderBy('name')->get(['id', 'name']) : collect();
 
+        $bankDetails = null;
+        if ($request->user()->isHelper()) {
+            $helper = $request->user()->helper;
+            $bankDetails = [
+                'bank_name' => $helper->bank_name,
+                'bank_account_no' => $helper->bank_account_no,
+                'paynow_enabled' => $helper->paynow_enabled,
+                'paynow_identifier' => $helper->paynow_identifier,
+            ];
+        }
+
         return Inertia::render('salary-payments/Index', [
             'payments' => $payments,
             'helpers' => $helpers,
             'filters' => $request->only('helper_id'),
+            'bankDetails' => $bankDetails,
         ]);
     }
 

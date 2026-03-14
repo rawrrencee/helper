@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Select from 'primevue/select';
+import Card from 'primevue/card';
+import InputText from 'primevue/inputtext';
 import PrimeButton from 'primevue/button';
 import Tag from 'primevue/tag';
 import Toast from 'primevue/toast';
@@ -24,6 +26,13 @@ type Payment = {
     helper: { id: number; name: string };
 };
 
+type BankDetails = {
+    bank_name: string | null;
+    bank_account_no: string | null;
+    paynow_enabled: boolean;
+    paynow_identifier: string | null;
+};
+
 const props = defineProps<{
     payments: {
         data: Payment[];
@@ -33,6 +42,7 @@ const props = defineProps<{
     };
     helpers: { id: number; name: string }[];
     filters: { helper_id?: number };
+    bankDetails?: BankDetails | null;
 }>();
 
 const page = usePage();
@@ -56,6 +66,33 @@ function onPage(event: { page: number }) {
     }, { preserveState: true });
 }
 
+const editingBankDetails = ref(false);
+const bankForm = useForm({
+    payment_method: props.bankDetails?.paynow_enabled ? 'paynow' : 'bank_transfer',
+    bank_name: props.bankDetails?.bank_name ?? '',
+    bank_account_no: props.bankDetails?.bank_account_no ?? '',
+    paynow_identifier: props.bankDetails?.paynow_identifier ?? '',
+});
+
+function saveBankDetails() {
+    bankForm.put('/helpers/bank-details', {
+        onSuccess: () => {
+            editingBankDetails.value = false;
+            toast.add({ severity: 'success', summary: 'Updated', detail: 'Bank details updated.', life: 3000 });
+        },
+    });
+}
+
+function cancelBankEdit() {
+    editingBankDetails.value = false;
+    bankForm.reset();
+}
+
+const paymentMethodOptions = [
+    { label: 'Bank Transfer', value: 'bank_transfer' },
+    { label: 'PayNow', value: 'paynow' },
+];
+
 function confirmDelete(payment: Payment) {
     if (confirm('Delete this salary record?')) {
         router.delete(`/salary-payments/${payment.id}`, {
@@ -77,6 +114,85 @@ function confirmDelete(payment: Payment) {
                     <Button><i class="pi pi-plus mr-1" /> New Payment</Button>
                 </Link>
             </div>
+
+            <Card v-if="!isAdmin && bankDetails !== undefined">
+                <template #title>Bank Details</template>
+                <template #content>
+                    <template v-if="!editingBankDetails">
+                        <div v-if="bankDetails?.bank_name || bankDetails?.paynow_enabled" class="space-y-2 text-sm">
+                            <template v-if="bankDetails.paynow_enabled">
+                                <div class="flex gap-2">
+                                    <span class="text-muted-foreground">Method:</span>
+                                    <span class="font-medium">PayNow</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <span class="text-muted-foreground">PayNow Number:</span>
+                                    <span class="font-medium">{{ bankDetails.paynow_identifier }}</span>
+                                </div>
+                            </template>
+                            <template v-else>
+                                <div class="flex gap-2">
+                                    <span class="text-muted-foreground">Method:</span>
+                                    <span class="font-medium">Bank Transfer</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <span class="text-muted-foreground">Bank:</span>
+                                    <span class="font-medium">{{ bankDetails.bank_name }}</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <span class="text-muted-foreground">Account No:</span>
+                                    <span class="font-medium">{{ bankDetails.bank_account_no }}</span>
+                                </div>
+                            </template>
+                        </div>
+                        <p v-else class="text-sm text-muted-foreground">No bank details set.</p>
+                        <div class="mt-3">
+                            <PrimeButton label="Edit" icon="pi pi-pencil" severity="secondary" size="small" @click="editingBankDetails = true" />
+                        </div>
+                    </template>
+
+                    <template v-else>
+                        <form class="space-y-4" @submit.prevent="saveBankDetails">
+                            <div>
+                                <label class="mb-1 block text-sm font-medium">Payment Method</label>
+                                <Select
+                                    v-model="bankForm.payment_method"
+                                    :options="paymentMethodOptions"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    class="w-full"
+                                />
+                            </div>
+
+                            <template v-if="bankForm.payment_method === 'bank_transfer'">
+                                <div>
+                                    <label class="mb-1 block text-sm font-medium">Bank Name</label>
+                                    <InputText v-model="bankForm.bank_name" class="w-full" />
+                                    <small v-if="bankForm.errors.bank_name" class="text-red-500">{{ bankForm.errors.bank_name }}</small>
+                                </div>
+                                <div>
+                                    <label class="mb-1 block text-sm font-medium">Account Number</label>
+                                    <InputText v-model="bankForm.bank_account_no" class="w-full" />
+                                    <small v-if="bankForm.errors.bank_account_no" class="text-red-500">{{ bankForm.errors.bank_account_no }}</small>
+                                </div>
+                            </template>
+
+                            <template v-if="bankForm.payment_method === 'paynow'">
+                                <div>
+                                    <label class="mb-1 block text-sm font-medium">PayNow Number</label>
+                                    <InputText v-model="bankForm.paynow_identifier" class="w-full" />
+                                    <small v-if="bankForm.errors.paynow_identifier" class="text-red-500">{{ bankForm.errors.paynow_identifier }}</small>
+                                </div>
+                            </template>
+
+                            <div class="flex gap-2">
+                                <PrimeButton type="submit" label="Save" size="small" :loading="bankForm.processing" />
+                                <PrimeButton type="button" label="Cancel" severity="secondary" size="small" @click="cancelBankEdit" />
+                            </div>
+                        </form>
+                    </template>
+                </template>
+            </Card>
 
             <div v-if="isAdmin && helpers.length > 0" class="flex items-center gap-4">
                 <Select

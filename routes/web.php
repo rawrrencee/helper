@@ -15,6 +15,7 @@ Route::inertia('/', 'Welcome')->name('home');
 Route::middleware(['auth'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
 
+    Route::put('helpers/bank-details', [HelperController::class, 'updateBankDetails'])->name('helpers.update-bank-details');
     Route::resource('helpers', HelperController::class);
     Route::post('helpers/{helper}/reset-password', [HelperController::class, 'resetPassword'])->name('helpers.reset-password');
 
