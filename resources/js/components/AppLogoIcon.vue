@@ -19,27 +19,22 @@ defineProps<Props>();
         :class="className"
         v-bind="$attrs"
     >
-        <!-- Head -->
-        <circle cx="32" cy="14" r="8" fill="currentColor" />
-        <!-- Body -->
+        <!-- Heart shape -->
         <path
             fill="currentColor"
-            d="M22 26a10 10 0 0 1 20 0v10h-6v16h-8V36h-6V26Z"
+            d="M32 56C28 52 6 36 6 22c0-8 6-14 13.5-14C24 8 28 10.5 32 16c4-5.5 8-8 12.5-8C52 8 58 14 58 22c0 14-22 30-26 34Z"
         />
-        <!-- Left hand reaching out -->
+        <!-- Left eye -->
+        <ellipse cx="24" cy="26" rx="2.5" ry="3" fill="oklch(0.95 0 0)" />
+        <!-- Right eye -->
+        <ellipse cx="40" cy="26" rx="2.5" ry="3" fill="oklch(0.95 0 0)" />
+        <!-- Smile -->
         <path
-            fill="currentColor"
-            d="M22 26c-2 0-6 2-10 8l-4 6 5 3 4-6 1-2v-5c0-2 2-4 4-4Z"
-        />
-        <!-- Right hand reaching out -->
-        <path
-            fill="currentColor"
-            d="M42 26c2 0 6 2 10 8l4 6-5 3-4-6-1-2v-5c0-2-2-4-4-4Z"
-        />
-        <!-- Heart in chest -->
-        <path
-            fill="oklch(0.95 0 0)"
-            d="M32 33c-1.5-2-4-2.5-5-1s0 3.5 5 6.5c5-3 6-5 5-6.5s-3.5-1-5 1Z"
+            fill="none"
+            stroke="oklch(0.95 0 0)"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            d="M25 35c2.5 3.5 9.5 3.5 14 0"
         />
     </svg>
 </template>
