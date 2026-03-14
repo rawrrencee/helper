@@ -2,7 +2,7 @@
 import type { HTMLAttributes, Ref } from "vue"
 import { defaultDocument, useEventListener, useMediaQuery, useVModel } from "@vueuse/core"
 import { TooltipProvider } from "reka-ui"
-import { computed, ref } from "vue"
+import { computed, onMounted, onUnmounted, ref } from "vue"
 import { cn } from "@/lib/utils"
 import { provideSidebarContext, SIDEBAR_COOKIE_MAX_AGE, SIDEBAR_COOKIE_NAME, SIDEBAR_KEYBOARD_SHORTCUT, SIDEBAR_WIDTH, SIDEBAR_WIDTH_ICON } from "./utils"
 
@@ -62,6 +62,50 @@ provideSidebarContext({
   openMobile,
   setOpenMobile,
   toggleSidebar,
+})
+
+// Swipe-right from left edge to open mobile sidebar
+const EDGE_THRESHOLD = 30
+const SWIPE_MIN_DISTANCE = 50
+let touchStartX = 0
+let touchStartY = 0
+let isSwiping = false
+
+function onTouchStart(e: TouchEvent) {
+  if (!isMobile.value || openMobile.value) return
+  const touch = e.touches[0]
+  if (touch.clientX <= EDGE_THRESHOLD) {
+    touchStartX = touch.clientX
+    touchStartY = touch.clientY
+    isSwiping = true
+  }
+}
+
+function onTouchEnd(e: TouchEvent) {
+  if (!isSwiping) return
+  isSwiping = false
+  const touch = e.changedTouches[0]
+  const dx = touch.clientX - touchStartX
+  const dy = Math.abs(touch.clientY - touchStartY)
+  if (dx > SWIPE_MIN_DISTANCE && dx > dy) {
+    setOpenMobile(true)
+  }
+}
+
+function onTouchCancel() {
+  isSwiping = false
+}
+
+onMounted(() => {
+  document.addEventListener('touchstart', onTouchStart, { passive: true })
+  document.addEventListener('touchend', onTouchEnd, { passive: true })
+  document.addEventListener('touchcancel', onTouchCancel, { passive: true })
+})
+
+onUnmounted(() => {
+  document.removeEventListener('touchstart', onTouchStart)
+  document.removeEventListener('touchend', onTouchEnd)
+  document.removeEventListener('touchcancel', onTouchCancel)
 })
 </script>
 
