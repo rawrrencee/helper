@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
-import { BookOpen, FolderGit2, LayoutGrid } from 'lucide-vue-next';
+import { Link, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
+import { CalendarDays, DollarSign, FileText, Heart, LayoutGrid, Users } from 'lucide-vue-next';
 import AppLogo from '@/components/AppLogo.vue';
-import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import {
@@ -17,26 +17,73 @@ import {
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-];
+const page = usePage();
+const user = computed(() => page.props.auth.user);
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/vue-starter-kit',
-        icon: FolderGit2,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#vue',
-        icon: BookOpen,
-    },
-];
+const mainNavItems = computed<NavItem[]>(() => {
+    if (user.value.role === 'admin') {
+        return [
+            {
+                title: 'Dashboard',
+                href: dashboard(),
+                icon: LayoutGrid,
+            },
+            {
+                title: 'Helpers',
+                href: '/helpers',
+                icon: Users,
+            },
+            {
+                title: 'Salary Payments',
+                href: '/salary-payments',
+                icon: DollarSign,
+            },
+            {
+                title: 'Family Info',
+                href: '/family-info',
+                icon: Heart,
+            },
+            {
+                title: 'Appointments',
+                href: '/appointments',
+                icon: CalendarDays,
+            },
+        ];
+    }
+
+    return [
+        {
+            title: 'Dashboard',
+            href: dashboard(),
+            icon: LayoutGrid,
+        },
+        {
+            title: 'My Profile',
+            href: '/helpers/' + (page.props.auth.user as any).helper_id,
+            icon: Users,
+        },
+        {
+            title: 'My Salary',
+            href: '/salary-payments',
+            icon: DollarSign,
+        },
+        {
+            title: 'Family Info',
+            href: '/family-info',
+            icon: Heart,
+        },
+        {
+            title: 'Appointments',
+            href: '/appointments',
+            icon: CalendarDays,
+        },
+        {
+            title: 'Documents',
+            href: '/helpers/' + (page.props.auth.user as any).helper_id + '/documents',
+            icon: FileText,
+        },
+    ];
+});
 </script>
 
 <template>
@@ -58,7 +105,6 @@ const footerNavItems: NavItem[] = [
         </SidebarContent>
 
         <SidebarFooter>
-            <NavFooter :items="footerNavItems" />
             <NavUser />
         </SidebarFooter>
     </Sidebar>
