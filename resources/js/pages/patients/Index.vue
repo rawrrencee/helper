@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, usePage } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Tag from 'primevue/tag';
@@ -24,6 +24,8 @@ const props = defineProps<{
 const page = usePage();
 const isAdmin = computed(() => (page.props.auth.user as any).role === 'admin');
 
+const expandedRows = ref({});
+
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Patients', href: '/patients' },
 ];
@@ -42,11 +44,13 @@ const breadcrumbs: BreadcrumbItem[] = [
             </div>
 
             <DataTable
+                v-model:expandedRows="expandedRows"
                 :value="patients"
                 dataKey="id"
                 stripedRows
                 class="text-sm"
             >
+                <Column expander headerClass="md:hidden" class="md:hidden" style="width: 3rem" />
                 <Column field="name" header="Name">
                     <template #body="{ data }">
                         <Link :href="`/patients/${data.id}`" class="font-medium text-blue-600 hover:underline dark:text-blue-400">
@@ -72,6 +76,19 @@ const breadcrumbs: BreadcrumbItem[] = [
                         </div>
                     </template>
                 </Column>
+
+                <template #expansion="{ data }">
+                    <div class="md:hidden p-3 space-y-1 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-muted-foreground">NRIC</span>
+                            <span>{{ data.masked_nric }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-muted-foreground">Phone</span>
+                            <span>{{ data.phone ?? '-' }}</span>
+                        </div>
+                    </div>
+                </template>
 
                 <template #empty>
                     <div class="py-8 text-center text-muted-foreground">

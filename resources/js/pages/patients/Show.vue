@@ -63,6 +63,9 @@ const frequencyOptions = [
 const scheduledMedications = computed(() => props.patient.medications.filter(m => !m.is_optional));
 const optionalMedications = computed(() => props.patient.medications.filter(m => m.is_optional));
 
+const expandedScheduled = ref({});
+const expandedOptional = ref({});
+
 const showMedicationDialog = ref(false);
 const editingMedication = ref<Medication | null>(null);
 const useCustomFrequency = ref(false);
@@ -235,7 +238,8 @@ function toggleCustomFrequency() {
                     </Button>
                 </div>
 
-                <DataTable :value="scheduledMedications" dataKey="id" stripedRows class="text-sm">
+                <DataTable v-model:expandedRows="expandedScheduled" :value="scheduledMedications" dataKey="id" stripedRows class="text-sm">
+                    <Column expander headerClass="md:hidden" class="md:hidden" style="width: 3rem" />
                     <Column field="name" header="Medication" />
                     <Column field="dosage" header="Dosage" headerClass="hidden md:table-cell" class="hidden md:table-cell">
                         <template #body="{ data }">
@@ -260,6 +264,19 @@ function toggleCustomFrequency() {
                             </div>
                         </template>
                     </Column>
+
+                    <template #expansion="{ data }">
+                        <div class="md:hidden p-3 space-y-1 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-muted-foreground">Dosage</span>
+                                <span>{{ data.dosage ?? '-' }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-muted-foreground">Notes</span>
+                                <span>{{ data.notes ?? '-' }}</span>
+                            </div>
+                        </div>
+                    </template>
 
                     <template #empty>
                         <div class="py-8 text-center text-muted-foreground">
@@ -273,7 +290,8 @@ function toggleCustomFrequency() {
             <div v-if="optionalMedications.length > 0">
                 <h2 class="mb-4 text-xl font-semibold text-muted-foreground">Optional / If Needed</h2>
 
-                <DataTable :value="optionalMedications" dataKey="id" stripedRows class="text-sm opacity-80">
+                <DataTable v-model:expandedRows="expandedOptional" :value="optionalMedications" dataKey="id" stripedRows class="text-sm opacity-80">
+                    <Column expander headerClass="md:hidden" class="md:hidden" style="width: 3rem" />
                     <Column field="name" header="Medication" />
                     <Column field="dosage" header="Dosage" headerClass="hidden md:table-cell" class="hidden md:table-cell">
                         <template #body="{ data }">
@@ -298,6 +316,19 @@ function toggleCustomFrequency() {
                             </div>
                         </template>
                     </Column>
+
+                    <template #expansion="{ data }">
+                        <div class="md:hidden p-3 space-y-1 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-muted-foreground">Dosage</span>
+                                <span>{{ data.dosage ?? '-' }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-muted-foreground">Notes</span>
+                                <span>{{ data.notes ?? '-' }}</span>
+                            </div>
+                        </div>
+                    </template>
                 </DataTable>
             </div>
         </div>

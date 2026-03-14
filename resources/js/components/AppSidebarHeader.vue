@@ -1,6 +1,15 @@
 <script setup lang="ts">
+import { Moon, Sun, Monitor } from 'lucide-vue-next';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
+import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { useAppearance } from '@/composables/useAppearance';
 import type { BreadcrumbItem } from '@/types';
 
 withDefaults(
@@ -11,6 +20,14 @@ withDefaults(
         breadcrumbs: () => [],
     },
 );
+
+const { appearance, updateAppearance } = useAppearance();
+
+function cycleAppearance() {
+    const modes = ['light', 'dark', 'system'] as const;
+    const next = modes[(modes.indexOf(appearance.value) + 1) % modes.length];
+    updateAppearance(next);
+}
 </script>
 
 <template>
@@ -22,6 +39,27 @@ withDefaults(
             <template v-if="breadcrumbs && breadcrumbs.length > 0">
                 <Breadcrumbs :breadcrumbs="breadcrumbs" />
             </template>
+        </div>
+        <div class="ml-auto">
+            <TooltipProvider :delay-duration="0">
+                <Tooltip>
+                    <TooltipTrigger as-child>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            class="h-9 w-9 cursor-pointer"
+                            @click="cycleAppearance"
+                        >
+                            <Sun v-if="appearance === 'light'" class="size-5" />
+                            <Moon v-else-if="appearance === 'dark'" class="size-5" />
+                            <Monitor v-else class="size-5" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p class="capitalize">{{ appearance }} mode</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
         </div>
     </header>
 </template>

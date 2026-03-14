@@ -35,6 +35,7 @@ const props = defineProps<{
 
 const toast = useToast();
 const search = ref(props.filters.search ?? '');
+const expandedRows = ref({});
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Helpers', href: '/helpers' },
@@ -86,6 +87,7 @@ function confirmDelete(helper: Helper) {
             </div>
 
             <DataTable
+                v-model:expandedRows="expandedRows"
                 :value="helpers.data"
                 :lazy="true"
                 :paginator="true"
@@ -97,6 +99,7 @@ function confirmDelete(helper: Helper) {
                 stripedRows
                 class="text-sm"
             >
+                <Column expander headerClass="md:hidden" class="md:hidden" style="width: 3rem" />
                 <Column field="name" header="Name">
                     <template #body="{ data }">
                         <Link :href="`/helpers/${data.id}`" class="font-medium text-blue-600 hover:underline dark:text-blue-400">
@@ -104,14 +107,14 @@ function confirmDelete(helper: Helper) {
                         </Link>
                     </template>
                 </Column>
-                <Column field="fin" header="FIN" />
-                <Column field="nationality" header="Nationality" />
+                <Column field="fin" header="FIN" headerClass="hidden md:table-cell" class="hidden md:table-cell" />
+                <Column field="nationality" header="Nationality" headerClass="hidden md:table-cell" class="hidden md:table-cell" />
                 <Column field="monthly_salary" header="Salary">
                     <template #body="{ data }">
                         ${{ Number(data.monthly_salary).toFixed(2) }}
                     </template>
                 </Column>
-                <Column header="Actions" style="width: 10rem">
+                <Column header="Actions">
                     <template #body="{ data }">
                         <div class="flex gap-2">
                             <Link :href="`/helpers/${data.id}/edit`">
@@ -121,6 +124,19 @@ function confirmDelete(helper: Helper) {
                         </div>
                     </template>
                 </Column>
+
+                <template #expansion="{ data }">
+                    <div class="md:hidden p-3 space-y-1 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-muted-foreground">FIN</span>
+                            <span>{{ data.fin }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-muted-foreground">Nationality</span>
+                            <span>{{ data.nationality ?? '-' }}</span>
+                        </div>
+                    </div>
+                </template>
 
                 <template #empty>
                     <div class="py-8 text-center text-muted-foreground">
