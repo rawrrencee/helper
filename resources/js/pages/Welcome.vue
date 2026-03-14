@@ -33,19 +33,19 @@ import { dashboard, login } from '@/routes';
                 <div class="max-w-3xl text-center">
                     <div class="mb-8 inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-4 py-1.5 text-sm font-medium text-violet-700 dark:text-violet-300">
                         <span class="inline-block h-2 w-2 animate-pulse rounded-full bg-violet-500" />
-                        Helper Management
+                        Your Care Companion
                     </div>
 
                     <h1 class="text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
-                        <span class="block">Manage your</span>
+                        <span class="block">Everything you</span>
                         <span class="bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 bg-clip-text text-transparent dark:from-violet-400 dark:via-fuchsia-400 dark:to-pink-400">
-                            domestic helpers
+                            need to care
                         </span>
-                        <span class="block">with ease</span>
+                        <span class="block">in one place</span>
                     </h1>
 
                     <p class="mx-auto mt-8 max-w-xl text-lg leading-relaxed text-muted-foreground">
-                        Profiles, documents, salary slips, and more — all in one simple place designed for Singapore employers.
+                        Patients, medications, schedules, and more — your daily caregiving companion.
                     </p>
 
                     <div class="mt-12 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
@@ -59,20 +59,20 @@ import { dashboard, login } from '@/routes';
 
                     <div class="mt-20 grid grid-cols-2 gap-4 sm:grid-cols-4">
                         <div class="group rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm transition-colors hover:border-violet-500/30 hover:bg-violet-500/5">
-                            <div class="mb-2 text-2xl">👤</div>
-                            <p class="text-sm font-medium">Profiles</p>
+                            <div class="mb-2 text-2xl">🩺</div>
+                            <p class="text-sm font-medium">Patients</p>
                         </div>
                         <div class="group rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm transition-colors hover:border-fuchsia-500/30 hover:bg-fuchsia-500/5">
-                            <div class="mb-2 text-2xl">📄</div>
-                            <p class="text-sm font-medium">Documents</p>
+                            <div class="mb-2 text-2xl">💊</div>
+                            <p class="text-sm font-medium">Medications</p>
                         </div>
                         <div class="group rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm transition-colors hover:border-pink-500/30 hover:bg-pink-500/5">
-                            <div class="mb-2 text-2xl">💰</div>
-                            <p class="text-sm font-medium">Salary</p>
+                            <div class="mb-2 text-2xl">📋</div>
+                            <p class="text-sm font-medium">Schedules</p>
                         </div>
                         <div class="group rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm transition-colors hover:border-blue-500/30 hover:bg-blue-500/5">
-                            <div class="mb-2 text-2xl">👨‍👩‍👧</div>
-                            <p class="text-sm font-medium">Family Info</p>
+                            <div class="mb-2 text-2xl">📄</div>
+                            <p class="text-sm font-medium">Documents</p>
                         </div>
                     </div>
                 </div>
