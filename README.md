@@ -156,3 +156,23 @@ npm run build
 ```
 
 Then push/pull the built assets (`public/build/`) to the server.
+
+## Screenshots
+
+### Admin Dashboard
+![Admin Dashboard](screenshots/admin-dashboard.jpeg)
+
+### Helper Dashboard
+![Helper Dashboard](screenshots/helper-dashboard.jpeg)
+
+### Patient Medications
+![Patient Medications](screenshots/patient-medications.jpeg)
+
+### Upload Helper Files
+![Upload Helper Files](screenshots/upload-helper-files.jpeg)
+
+### Edit Appointment
+![Edit Appointment](screenshots/edit-appointment.jpeg)
+
+### Salary Payment Form
+![Salary Payment Form](screenshots/salary-payment.jpeg)
