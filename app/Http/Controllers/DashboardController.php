@@ -80,6 +80,7 @@ class DashboardController extends Controller
     private function getPatientMedications(Helper $helper): array
     {
         $presetMinutes = [
+            '3 Times a Day (If Needed)' => 419,
             'After Breakfast' => 420,  // 07:00
             'After Lunch' => 720,      // 12:00
             'After Dinner' => 1080,    // 18:00

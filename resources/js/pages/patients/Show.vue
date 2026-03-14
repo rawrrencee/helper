@@ -50,6 +50,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 const toast = useToast();
 
 const frequencyOptions = [
+    { label: '3 Times a Day (If Needed)', value: '3 Times a Day (If Needed)' },
     { label: 'After Breakfast', value: 'After Breakfast' },
     { label: 'After Lunch', value: 'After Lunch' },
     { label: 'After Dinner', value: 'After Dinner' },
@@ -128,6 +129,9 @@ function submitMedication() {
         medicationForm.transform(() => data).post(`/patients/${props.patient.id}/medications`, {
             onSuccess: () => {
                 showMedicationDialog.value = false;
+                medicationForm.reset();
+                customTime.value = null;
+                useCustomFrequency.value = false;
                 toast.add({ severity: 'success', summary: 'Added', detail: 'Medication added.', life: 3000 });
             },
         });

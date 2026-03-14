@@ -71,6 +71,7 @@ class PatientController extends Controller
         }
 
         $presetMinutes = [
+            '3 Times a Day (If Needed)' => 419,
             'After Breakfast' => 420,
             'After Lunch' => 720,
             'After Dinner' => 1080,
