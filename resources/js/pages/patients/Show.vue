@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import Dialog from 'primevue/dialog';
 import DatePicker from 'primevue/datepicker';
 import InputText from 'primevue/inputtext';
 import Select from 'primevue/select';
 import Textarea from 'primevue/textarea';
 import Tag from 'primevue/tag';
+import Checkbox from 'primevue/checkbox';
 import PrimeButton from 'primevue/button';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
@@ -21,6 +22,7 @@ type Medication = {
     name: string;
     dosage: string | null;
     frequency: string;
+    is_optional: boolean;
     notes: string | null;
 };
 
@@ -50,12 +52,16 @@ const breadcrumbs: BreadcrumbItem[] = [
 const toast = useToast();
 
 const frequencyOptions = [
-    { label: '3 Times a Day (If Needed)', value: '3 Times a Day (If Needed)' },
+    { label: '2 Times a Day', value: '2 Times a Day' },
+    { label: '3 Times a Day', value: '3 Times a Day' },
     { label: 'After Breakfast', value: 'After Breakfast' },
     { label: 'After Lunch', value: 'After Lunch' },
     { label: 'After Dinner', value: 'After Dinner' },
     { label: 'Before Sleep', value: 'Before Sleep' },
 ];
+
+const scheduledMedications = computed(() => props.patient.medications.filter(m => !m.is_optional));
+const optionalMedications = computed(() => props.patient.medications.filter(m => m.is_optional));
 
 const showMedicationDialog = ref(false);
 const editingMedication = ref<Medication | null>(null);
@@ -84,6 +90,7 @@ const medicationForm = useForm({
     name: '',
     dosage: '',
     frequency: '',
+    is_optional: false,
     notes: '',
 });
 
@@ -101,6 +108,7 @@ function openEditMedicationDialog(medication: Medication) {
     medicationForm.name = medication.name;
     medicationForm.dosage = medication.dosage ?? '';
     medicationForm.frequency = medication.frequency;
+    medicationForm.is_optional = medication.is_optional;
     medicationForm.notes = medication.notes ?? '';
 
     const isPreset = frequencyOptions.some(opt => opt.value === medication.frequency);
@@ -218,16 +226,16 @@ function toggleCustomFrequency() {
                 </div>
             </div>
 
-            <!-- Medications -->
+            <!-- Scheduled Medications -->
             <div>
                 <div class="mb-4 flex items-center justify-between">
-                    <h2 class="text-xl font-semibold">Medications</h2>
+                    <h2 class="text-xl font-semibold">Scheduled Medications</h2>
                     <Button v-if="isAdmin" @click="openAddMedicationDialog">
                         <i class="pi pi-plus mr-1" /> Add Medication
                     </Button>
                 </div>
 
-                <DataTable :value="patient.medications" dataKey="id" stripedRows class="text-sm">
+                <DataTable :value="scheduledMedications" dataKey="id" stripedRows class="text-sm">
                     <Column field="name" header="Medication" />
                     <Column field="dosage" header="Dosage">
                         <template #body="{ data }">
@@ -255,9 +263,41 @@ function toggleCustomFrequency() {
 
                     <template #empty>
                         <div class="py-8 text-center text-muted-foreground">
-                            No medications recorded.
+                            No scheduled medications recorded.
                         </div>
                     </template>
+                </DataTable>
+            </div>
+
+            <!-- Optional / If Needed Medications -->
+            <div v-if="optionalMedications.length > 0">
+                <h2 class="mb-4 text-xl font-semibold text-muted-foreground">Optional / If Needed</h2>
+
+                <DataTable :value="optionalMedications" dataKey="id" stripedRows class="text-sm opacity-80">
+                    <Column field="name" header="Medication" />
+                    <Column field="dosage" header="Dosage">
+                        <template #body="{ data }">
+                            {{ data.dosage ?? '-' }}
+                        </template>
+                    </Column>
+                    <Column field="frequency" header="Frequency">
+                        <template #body="{ data }">
+                            {{ formatFrequency(data.frequency) }}
+                        </template>
+                    </Column>
+                    <Column field="notes" header="Notes">
+                        <template #body="{ data }">
+                            {{ data.notes ?? '-' }}
+                        </template>
+                    </Column>
+                    <Column v-if="isAdmin" header="" style="width: 8rem">
+                        <template #body="{ data }">
+                            <div class="flex gap-1">
+                                <PrimeButton icon="pi pi-pencil" severity="secondary" text rounded size="small" @click="openEditMedicationDialog(data)" />
+                                <PrimeButton icon="pi pi-trash" severity="danger" text rounded size="small" @click="confirmDeleteMedication(data)" />
+                            </div>
+                        </template>
+                    </Column>
                 </DataTable>
             </div>
         </div>
@@ -303,6 +343,11 @@ function toggleCustomFrequency() {
                         :invalid="!!medicationForm.errors.frequency"
                     />
                     <small v-if="medicationForm.errors.frequency" class="text-red-500">{{ medicationForm.errors.frequency }}</small>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <Checkbox v-model="medicationForm.is_optional" :binary="true" inputId="is_optional" />
+                    <label for="is_optional" class="text-sm font-medium">If Needed / Optional</label>
                 </div>
 
                 <div class="flex flex-col gap-1">

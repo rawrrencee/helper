@@ -27,6 +27,7 @@ class UpdateMedicationRequest extends FormRequest
             'dosage' => ['nullable', 'string', 'max:255'],
             'frequency' => ['required', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'is_optional' => ['sometimes', 'boolean'],
         ];
     }
 }

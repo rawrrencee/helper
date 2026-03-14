@@ -69,7 +69,8 @@ class DashboardController extends Controller
                 'documentsCount' => $helper?->documents()->count() ?? 0,
                 'upcomingAppointments' => Appointment::query()->upcoming()->limit(5)->get(),
                 'familyInformation' => Setting::getValue('family_information'),
-                'patientMedications' => $helper ? $this->getPatientMedications($helper) : [],
+                'patientMedications' => $helper ? $this->getPatientMedications($helper, optional: false) : [],
+                'patientOptionalMedications' => $helper ? $this->getPatientMedications($helper, optional: true) : [],
             ],
         ]);
     }
@@ -77,18 +78,19 @@ class DashboardController extends Controller
     /**
      * @return list<array{patient_name: string, patient_id: int, medications: list<array<string, mixed>>}>
      */
-    private function getPatientMedications(Helper $helper): array
+    private function getPatientMedications(Helper $helper, bool $optional): array
     {
         $presetMinutes = [
-            '3 Times a Day (If Needed)' => 419,
-            'After Breakfast' => 420,  // 07:00
-            'After Lunch' => 720,      // 12:00
-            'After Dinner' => 1080,    // 18:00
-            'Before Sleep' => 1260,    // 21:00
+            '2 Times a Day' => 419,
+            '3 Times a Day' => 419.5,
+            'After Breakfast' => 420.5,  // 07:00
+            'After Lunch' => 720.5,      // 12:00
+            'After Dinner' => 1080.5,    // 18:00
+            'Before Sleep' => 1260.5,    // 21:00
         ];
 
         return $helper->patients()
-            ->with('medications')
+            ->with(['medications' => fn ($q) => $q->where('is_optional', $optional)])
             ->orderBy('name')
             ->get(['patients.id', 'patients.name'])
             ->map(function ($patient) use ($presetMinutes) {

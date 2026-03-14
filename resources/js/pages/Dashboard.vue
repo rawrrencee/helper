@@ -62,6 +62,7 @@ type HelperData = {
     upcomingAppointments: UpcomingAppointment[];
     familyInformation: string | null;
     patientMedications: PatientMedications[];
+    patientOptionalMedications: PatientMedications[];
 };
 
 const props = defineProps<{
@@ -256,7 +257,26 @@ const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
                                     </div>
                                 </div>
                             </div>
-                            <p v-else class="text-sm text-muted-foreground">No medications to track.</p>
+                            <p v-else class="text-sm text-muted-foreground">No scheduled medications to track.</p>
+
+                            <!-- Optional / If Needed -->
+                            <div v-if="(dashboardData as HelperData).patientOptionalMedications.length > 0" class="mt-6 border-t pt-4">
+                                <h4 class="mb-3 text-sm font-medium text-muted-foreground">Optional / If Needed</h4>
+                                <div class="space-y-4 opacity-75">
+                                    <div v-for="group in (dashboardData as HelperData).patientOptionalMedications" :key="group.patient_id">
+                                        <h3 class="mb-1 text-xs font-semibold text-muted-foreground">{{ group.patient_name }}</h3>
+                                        <div class="space-y-1">
+                                            <div v-for="med in group.medications" :key="med.id" class="flex items-center gap-3 rounded border border-dashed p-2">
+                                                <Tag :value="formatFrequency(med.frequency)" severity="secondary" />
+                                                <div>
+                                                    <span class="text-sm">{{ med.name }}</span>
+                                                    <span v-if="med.dosage" class="ml-1 text-sm text-muted-foreground">({{ med.dosage }})</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </template>
                     </Card>
 

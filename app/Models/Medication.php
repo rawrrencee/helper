@@ -15,6 +15,16 @@ class Medication extends Model
     protected $guarded = [];
 
     /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'is_optional' => 'boolean',
+        ];
+    }
+
+    /**
      * @return BelongsTo<Patient, $this>
      */
     public function patient(): BelongsTo

@@ -71,11 +71,12 @@ class PatientController extends Controller
         }
 
         $presetMinutes = [
-            '3 Times a Day (If Needed)' => 419,
-            'After Breakfast' => 420,
-            'After Lunch' => 720,
-            'After Dinner' => 1080,
-            'Before Sleep' => 1260,
+            '2 Times a Day' => 419,
+            '3 Times a Day' => 419.5,
+            'After Breakfast' => 420.5,
+            'After Lunch' => 720.5,
+            'After Dinner' => 1080.5,
+            'Before Sleep' => 1260.5,
         ];
 
         $patient->setRelation(

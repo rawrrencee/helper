@@ -24,6 +24,7 @@ class MedicationFactory extends Factory
             'dosage' => fake()->optional()->randomElement(['500mg', '250mg', '10mg', '5mg']),
             'frequency' => fake()->randomElement(['After Breakfast', 'After Lunch', 'After Dinner', 'Before Sleep', '08:00', '12:00', '20:00']),
             'notes' => fake()->optional()->sentence(),
+            'is_optional' => fake()->boolean(20),
         ];
     }
 }
