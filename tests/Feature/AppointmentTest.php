@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\Appointment;
+use App\Models\Helper;
+use App\Models\Patient;
 use App\Models\User;
 
 test('admin can create an appointment', function () {
@@ -192,4 +194,69 @@ test('helper cannot update other fields via notes endpoint', function () {
     $fresh = $appointment->fresh();
     expect($fresh->notes)->toBe('New notes');
     expect($fresh->title)->toBe('Original Title');
+});
+
+test('admin can create appointment linked to patient', function () {
+    $admin = User::factory()->admin()->create();
+    $patient = Patient::factory()->create();
+
+    $this->actingAs($admin)
+        ->post('/appointments', [
+            'title' => 'Patient Checkup',
+            'patient_id' => $patient->id,
+            'appointment_date' => '2026-04-01',
+        ])
+        ->assertRedirect();
+
+    $this->assertDatabaseHas('appointments', [
+        'title' => 'Patient Checkup',
+        'patient_id' => $patient->id,
+    ]);
+});
+
+test('admin can create appointment without patient', function () {
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->post('/appointments', [
+            'title' => 'General Appointment',
+            'appointment_date' => '2026-04-01',
+        ])
+        ->assertRedirect();
+
+    $this->assertDatabaseHas('appointments', [
+        'title' => 'General Appointment',
+        'patient_id' => null,
+    ]);
+});
+
+test('helper sees appointments for assigned patients and unlinked appointments', function () {
+    $helper = Helper::factory()->create();
+    $assignedPatient = Patient::factory()->create();
+    $unassignedPatient = Patient::factory()->create();
+    $assignedPatient->helpers()->attach($helper);
+
+    Appointment::factory()->forPatient($assignedPatient)->create();
+    Appointment::factory()->forPatient($unassignedPatient)->create();
+    Appointment::factory()->create(); // no patient
+
+    $this->actingAs($helper->user)
+        ->get('/appointments')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('appointments/Index')
+            ->has('upcomingAppointments', 2)
+        );
+});
+
+test('admin index includes patients list for dropdown', function () {
+    $admin = User::factory()->admin()->create();
+    Patient::factory()->count(2)->create();
+
+    $this->actingAs($admin)
+        ->get('/appointments')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('patients', 2)
+        );
 });

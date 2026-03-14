@@ -34,6 +34,20 @@ type AdminData = {
     familyInformation: string | null;
 };
 
+type MedicationItem = {
+    id: number;
+    name: string;
+    dosage: string | null;
+    frequency: string;
+    notes: string | null;
+};
+
+type PatientMedications = {
+    patient_name: string;
+    patient_id: number;
+    medications: MedicationItem[];
+};
+
 type HelperData = {
     role: 'helper';
     helper: { id: number; name: string; fin: string; nationality: string | null; monthly_salary: string } | null;
@@ -47,6 +61,7 @@ type HelperData = {
     documentsCount: number;
     upcomingAppointments: UpcomingAppointment[];
     familyInformation: string | null;
+    patientMedications: PatientMedications[];
 };
 
 const props = defineProps<{
@@ -56,6 +71,16 @@ const props = defineProps<{
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: dashboard() },
 ];
+
+function formatFrequency(freq: string): string {
+    const match = freq.match(/^(\d{2}):(\d{2})$/);
+    if (!match) return freq;
+    const h = parseInt(match[1]);
+    const m = match[2];
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12}:${m} ${ampm}`;
+}
 
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 </script>
@@ -206,6 +231,32 @@ const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
                                     <Button label="View Full Profile" severity="secondary" size="small" />
                                 </Link>
                             </div>
+                        </template>
+                    </Card>
+
+                    <Card>
+                        <template #title>Medications Schedule</template>
+                        <template #content>
+                            <div v-if="(dashboardData as HelperData).patientMedications.length > 0" class="space-y-6">
+                                <div v-for="group in (dashboardData as HelperData).patientMedications" :key="group.patient_id">
+                                    <div class="mb-2 flex items-center justify-between">
+                                        <h3 class="text-sm font-semibold">{{ group.patient_name }}</h3>
+                                        <Link :href="`/patients/${group.patient_id}`">
+                                            <Button label="View Patient" severity="secondary" text size="small" />
+                                        </Link>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <div v-for="med in group.medications" :key="med.id" class="flex items-center gap-3 rounded border p-2">
+                                            <Tag :value="formatFrequency(med.frequency)" severity="info" />
+                                            <div>
+                                                <span class="text-sm font-medium">{{ med.name }}</span>
+                                                <span v-if="med.dosage" class="ml-1 text-sm text-muted-foreground">({{ med.dosage }})</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <p v-else class="text-sm text-muted-foreground">No medications to track.</p>
                         </template>
                     </Card>
 

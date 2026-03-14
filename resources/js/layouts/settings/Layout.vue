@@ -35,6 +35,10 @@ const sidebarNavItems = computed<NavItem[]>(() => {
             title: 'Employer',
             href: '/settings/employer',
         });
+        items.push({
+            title: 'Admin Users',
+            href: '/settings/admin-users',
+        });
     }
 
     return items;

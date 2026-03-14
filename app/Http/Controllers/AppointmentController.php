@@ -6,6 +6,7 @@ use App\Http\Requests\StoreAppointmentRequest;
 use App\Http\Requests\UpdateAppointmentNotesRequest;
 use App\Http\Requests\UpdateAppointmentRequest;
 use App\Models\Appointment;
+use App\Models\Patient;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -17,18 +18,45 @@ class AppointmentController extends Controller
      */
     public function index(): Response
     {
+        $user = request()->user();
+
+        $upcomingQuery = Appointment::query()
+            ->with('patient:id,name')
+            ->where('status', '!=', 'cancelled')
+            ->where('appointment_date', '>=', now()->toDateString());
+
+        $completedQuery = Appointment::query()
+            ->with('patient:id,name')
+            ->where('status', 'completed');
+
+        if ($user->isHelper() && $user->helper) {
+            $assignedPatientIds = $user->helper->patients()->pluck('patients.id');
+
+            $upcomingQuery->where(function ($q) use ($assignedPatientIds) {
+                $q->whereIn('patient_id', $assignedPatientIds)
+                    ->orWhereNull('patient_id');
+            });
+
+            $completedQuery->where(function ($q) use ($assignedPatientIds) {
+                $q->whereIn('patient_id', $assignedPatientIds)
+                    ->orWhereNull('patient_id');
+            });
+        }
+
+        $patients = $user->isAdmin()
+            ? Patient::query()->orderBy('name')->get(['id', 'name'])
+            : [];
+
         return Inertia::render('appointments/Index', [
-            'upcomingAppointments' => Appointment::query()
-                ->where('status', '!=', 'cancelled')
-                ->where('appointment_date', '>=', now()->toDateString())
+            'upcomingAppointments' => $upcomingQuery
                 ->orderBy('appointment_date')
                 ->orderBy('appointment_time')
                 ->get(),
-            'completedAppointments' => Appointment::query()
-                ->where('status', 'completed')
+            'completedAppointments' => $completedQuery
                 ->orderByDesc('appointment_date')
                 ->orderByDesc('appointment_time')
                 ->get(),
+            'patients' => $patients,
         ]);
     }
 

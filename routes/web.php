@@ -5,6 +5,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\FamilyInfoController;
 use App\Http\Controllers\HelperController;
+use App\Http\Controllers\MedicationController;
+use App\Http\Controllers\PatientController;
 use App\Http\Controllers\SalaryPaymentController;
 use Illuminate\Support\Facades\Route;
 
@@ -29,6 +31,11 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('family-info', [FamilyInfoController::class, 'show'])->name('family-info.show');
     Route::put('family-info', [FamilyInfoController::class, 'update'])->name('family-info.update');
+
+    Route::resource('patients', PatientController::class);
+    Route::post('patients/{patient}/medications', [MedicationController::class, 'store'])->name('patients.medications.store');
+    Route::put('patients/{patient}/medications/{medication}', [MedicationController::class, 'update'])->name('patients.medications.update');
+    Route::delete('patients/{patient}/medications/{medication}', [MedicationController::class, 'destroy'])->name('patients.medications.destroy');
 
     Route::resource('appointments', AppointmentController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::patch('appointments/{appointment}/notes', [AppointmentController::class, 'updateNotes'])->name('appointments.update-notes');

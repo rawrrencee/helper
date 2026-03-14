@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\AdminUserController;
 use App\Http\Controllers\Settings\EmployerController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
@@ -26,5 +27,9 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware('admin')->group(function () {
         Route::get('settings/employer', [EmployerController::class, 'edit'])->name('employer.edit');
         Route::put('settings/employer', [EmployerController::class, 'update'])->name('employer.update');
+
+        Route::get('settings/admin-users', [AdminUserController::class, 'index'])->name('admin-users.index');
+        Route::post('settings/admin-users', [AdminUserController::class, 'store'])->name('admin-users.store');
+        Route::delete('settings/admin-users/{user}', [AdminUserController::class, 'destroy'])->name('admin-users.destroy');
     });
 });

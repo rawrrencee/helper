@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Helper extends Model
@@ -54,6 +55,14 @@ class Helper extends Model
     public function salaryPayments(): HasMany
     {
         return $this->hasMany(SalaryPayment::class);
+    }
+
+    /**
+     * @return BelongsToMany<Patient, $this>
+     */
+    public function patients(): BelongsToMany
+    {
+        return $this->belongsToMany(Patient::class)->withTimestamps();
     }
 
     /**

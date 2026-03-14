@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Appointment;
+use App\Models\Patient;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,6 +19,7 @@ class AppointmentFactory extends Factory
     public function definition(): array
     {
         return [
+            'patient_id' => null,
             'title' => fake()->sentence(3),
             'doctor' => fake()->optional()->name(),
             'appointment_date' => fake()->dateTimeBetween('+1 day', '+30 days')->format('Y-m-d'),
@@ -36,6 +38,16 @@ class AppointmentFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'status' => 'completed',
             'appointment_date' => fake()->dateTimeBetween('-30 days', '-1 day')->format('Y-m-d'),
+        ]);
+    }
+
+    /**
+     * Indicate the appointment is for a specific patient.
+     */
+    public function forPatient(?Patient $patient = null): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'patient_id' => $patient ?? Patient::factory(),
         ]);
     }
 

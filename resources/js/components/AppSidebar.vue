@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
-import { CalendarDays, DollarSign, FileText, Heart, LayoutGrid, Users } from 'lucide-vue-next';
+import { CalendarDays, DollarSign, FileText, Heart, LayoutGrid, Stethoscope, Users } from 'lucide-vue-next';
 import AppLogo from '@/components/AppLogo.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
@@ -39,6 +39,11 @@ const mainNavItems = computed<NavItem[]>(() => {
                 icon: DollarSign,
             },
             {
+                title: 'Patients',
+                href: '/patients',
+                icon: Stethoscope,
+            },
+            {
                 title: 'Family Info',
                 href: '/family-info',
                 icon: Heart,
@@ -66,6 +71,11 @@ const mainNavItems = computed<NavItem[]>(() => {
             title: 'My Salary',
             href: '/salary-payments',
             icon: DollarSign,
+        },
+        {
+            title: 'Patients',
+            href: '/patients',
+            icon: Stethoscope,
         },
         {
             title: 'Family Info',

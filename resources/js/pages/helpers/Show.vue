@@ -87,6 +87,11 @@ function field(label: string, value: string | number | null | undefined): string
     return String(value);
 }
 
+function formatDate(dateStr: string | null): string {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 function formatFileSize(bytes: number): string {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
@@ -145,7 +150,7 @@ function confirmDelete(doc: Document) {
                                     <div><span class="text-sm text-muted-foreground">Name</span><p class="font-medium">{{ field('Name', helper.name) }}</p></div>
                                     <div><span class="text-sm text-muted-foreground">FIN</span><p class="font-medium">{{ helper.fin }}</p></div>
                                     <div><span class="text-sm text-muted-foreground">Passport No.</span><p class="font-medium">{{ field('Passport', helper.passport_no) }}</p></div>
-                                    <div><span class="text-sm text-muted-foreground">Date of Birth</span><p class="font-medium">{{ field('DOB', helper.date_of_birth) }}</p></div>
+                                    <div><span class="text-sm text-muted-foreground">Date of Birth</span><p class="font-medium">{{ formatDate(helper.date_of_birth) }}</p></div>
                                     <div><span class="text-sm text-muted-foreground">Nationality</span><p class="font-medium">{{ field('Nationality', helper.nationality) }}</p></div>
                                     <div><span class="text-sm text-muted-foreground">Occupation</span><p class="font-medium">{{ field('Occupation', helper.occupation) }}</p></div>
                                 </div>
@@ -154,7 +159,7 @@ function confirmDelete(doc: Document) {
                             <section class="rounded-lg border p-6">
                                 <h2 class="mb-4 text-lg font-medium">Work Permit Details</h2>
                                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                    <div><span class="text-sm text-muted-foreground">Date of Application</span><p class="font-medium">{{ field('', helper.date_of_application) }}</p></div>
+                                    <div><span class="text-sm text-muted-foreground">Date of Application</span><p class="font-medium">{{ formatDate(helper.date_of_application) }}</p></div>
                                     <div><span class="text-sm text-muted-foreground">Work Permit No.</span><p class="font-medium">{{ field('', helper.work_permit_no) }}</p></div>
                                     <div><span class="text-sm text-muted-foreground">SB Transmission Ref No.</span><p class="font-medium">{{ field('', helper.sb_transmission_ref_no) }}</p></div>
                                     <div><span class="text-sm text-muted-foreground">Employer Name</span><p class="font-medium">{{ field('', helper.employer_name) }}</p></div>

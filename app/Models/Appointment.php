@@ -6,6 +6,7 @@ use Database\Factories\AppointmentFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Appointment extends Model
 {
@@ -22,6 +23,14 @@ class Appointment extends Model
         return [
             'appointment_date' => 'date',
         ];
+    }
+
+    /**
+     * @return BelongsTo<Patient, $this>
+     */
+    public function patient(): BelongsTo
+    {
+        return $this->belongsTo(Patient::class);
     }
 
     /**
