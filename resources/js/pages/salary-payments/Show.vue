@@ -43,6 +43,8 @@ const page = usePage();
 const isAdmin = computed(() => (page.props.auth.user as any).role === 'admin');
 const toast = useToast();
 
+const isFullMonth = computed(() => Number(props.payment.pro_rated_amount) === Number(props.payment.base_salary));
+
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -93,6 +95,14 @@ function uploadScreenshot(event: Event) {
                     </div>
                     <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
                         <div><span class="text-sm text-muted-foreground">Month/Year</span><p class="font-medium">{{ months[payment.month - 1] }} {{ payment.year }}</p></div>
+                        <div v-if="payment.working_days_start && payment.working_days_end">
+                            <span class="text-sm text-muted-foreground">Working Period</span>
+                            <p class="font-medium">
+                                {{ new Date(payment.working_days_start).toLocaleDateString('en-GB') }}
+                                –
+                                {{ new Date(payment.working_days_end).toLocaleDateString('en-GB') }}
+                            </p>
+                        </div>
                         <div><span class="text-sm text-muted-foreground">Calendar Days</span><p class="font-medium">{{ payment.total_calendar_days }}</p></div>
                         <div><span class="text-sm text-muted-foreground">Sundays</span><p class="font-medium">{{ payment.sundays_in_period }}</p></div>
                     </div>
@@ -102,8 +112,10 @@ function uploadScreenshot(event: Event) {
                     <h2 class="mb-4 text-lg font-medium">Calculation Breakdown</h2>
                     <div class="space-y-3">
                         <div class="flex justify-between"><span class="text-muted-foreground">Base Salary</span><span class="font-medium">${{ Number(payment.base_salary).toFixed(2) }}</span></div>
-                        <div class="flex justify-between"><span class="text-muted-foreground">Daily Rate (Salary / 26)</span><span class="font-medium">${{ Number(payment.rest_day_rate).toFixed(2) }}</span></div>
-                        <div class="flex justify-between"><span class="text-muted-foreground">Pro-Rated Amount</span><span class="font-medium">${{ Number(payment.pro_rated_amount).toFixed(2) }}</span></div>
+                        <template v-if="!isFullMonth">
+                            <div class="flex justify-between"><span class="text-muted-foreground">Daily Rate (Salary / 26)</span><span class="font-medium">${{ Number(payment.rest_day_rate).toFixed(2) }}</span></div>
+                            <div class="flex justify-between"><span class="text-muted-foreground">Pro-Rated Amount</span><span class="font-medium">${{ Number(payment.pro_rated_amount).toFixed(2) }}</span></div>
+                        </template>
                         <template v-if="payment.extra_rest_days_worked > 0">
                             <div class="flex justify-between"><span class="text-muted-foreground">Sundays Worked</span><span class="font-medium">{{ payment.extra_rest_days_worked }}</span></div>
                             <div v-if="payment.sundays_worked_dates?.length" class="flex justify-between">

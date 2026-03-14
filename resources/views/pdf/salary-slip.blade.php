@@ -63,8 +63,10 @@
         <h3>Salary Calculation</h3>
         <table>
             <tr><td>Base Monthly Salary</td><td>${{ number_format($payment->base_salary, 2) }}</td></tr>
+            @if($payment->pro_rated_amount != $payment->base_salary)
             <tr><td>Daily Rate (Salary / 26)</td><td>${{ number_format($payment->rest_day_rate, 2) }}</td></tr>
             <tr><td>Pro-Rated Amount</td><td>${{ number_format($payment->pro_rated_amount, 2) }}</td></tr>
+            @endif
             @if($payment->extra_rest_days_worked > 0)
             <tr><td>Sundays Worked</td><td>{{ $payment->extra_rest_days_worked }}</td></tr>
             @if($payment->sundays_worked_dates)

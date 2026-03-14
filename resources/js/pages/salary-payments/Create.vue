@@ -304,19 +304,23 @@ if (form.helper_id && selectedHelper.value) {
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div class="flex flex-col gap-1">
                             <label class="text-sm font-medium">Start Date</label>
-                            <DatePicker v-model="form.working_days_start" dateFormat="yy-mm-dd" showIcon />
+                            <DatePicker v-model="form.working_days_start" dateFormat="yy-mm-dd" showIcon :invalid="!!form.errors.working_days_start" />
+                            <small v-if="form.errors.working_days_start" class="text-red-500">{{ form.errors.working_days_start }}</small>
                         </div>
                         <div class="flex flex-col gap-1">
                             <label class="text-sm font-medium">End Date</label>
-                            <DatePicker v-model="form.working_days_end" dateFormat="yy-mm-dd" showIcon />
+                            <DatePicker v-model="form.working_days_end" dateFormat="yy-mm-dd" showIcon :invalid="!!form.errors.working_days_end" />
+                            <small v-if="form.errors.working_days_end" class="text-red-500">{{ form.errors.working_days_end }}</small>
                         </div>
                         <div class="flex flex-col gap-1">
                             <label class="text-sm font-medium">Total Calendar Days</label>
-                            <InputNumber v-model="form.total_calendar_days" :min="0" />
+                            <InputNumber v-model="form.total_calendar_days" :min="0" :invalid="!!form.errors.total_calendar_days" />
+                            <small v-if="form.errors.total_calendar_days" class="text-red-500">{{ form.errors.total_calendar_days }}</small>
                         </div>
                         <div class="flex flex-col gap-1">
                             <label class="text-sm font-medium">Sundays in Period</label>
-                            <InputNumber v-model="form.sundays_in_period" :min="0" />
+                            <InputNumber v-model="form.sundays_in_period" :min="0" :invalid="!!form.errors.sundays_in_period" />
+                            <small v-if="form.errors.sundays_in_period" class="text-red-500">{{ form.errors.sundays_in_period }}</small>
                         </div>
                     </div>
                 </section>
@@ -326,11 +330,13 @@ if (form.helper_id && selectedHelper.value) {
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div class="flex flex-col gap-1">
                             <label class="text-sm font-medium">Base Salary *</label>
-                            <InputNumber v-model="form.base_salary" mode="currency" currency="SGD" />
+                            <InputNumber v-model="form.base_salary" mode="currency" currency="SGD" :invalid="!!form.errors.base_salary" />
+                            <small v-if="form.errors.base_salary" class="text-red-500">{{ form.errors.base_salary }}</small>
                         </div>
                         <div class="flex flex-col gap-1">
                             <label class="text-sm font-medium">Sundays Worked</label>
-                            <InputNumber v-model="form.extra_rest_days_worked" :min="0" />
+                            <InputNumber v-model="form.extra_rest_days_worked" :min="0" :invalid="!!form.errors.extra_rest_days_worked" />
+                            <small v-if="form.errors.extra_rest_days_worked" class="text-red-500">{{ form.errors.extra_rest_days_worked }}</small>
                         </div>
                     </div>
 
@@ -422,11 +428,13 @@ if (form.helper_id && selectedHelper.value) {
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div class="flex flex-col gap-1">
                             <label class="text-sm font-medium">Payment Method</label>
-                            <Select v-model="form.payment_method" :options="paymentMethods" optionLabel="label" optionValue="value" />
+                            <Select v-model="form.payment_method" :options="paymentMethods" optionLabel="label" optionValue="value" :invalid="!!form.errors.payment_method" />
+                            <small v-if="form.errors.payment_method" class="text-red-500">{{ form.errors.payment_method }}</small>
                         </div>
                         <div class="flex flex-col gap-1">
                             <label class="text-sm font-medium">Paid At</label>
-                            <DatePicker v-model="form.paid_at" dateFormat="yy-mm-dd" showIcon />
+                            <DatePicker v-model="form.paid_at" dateFormat="yy-mm-dd" showIcon :invalid="!!form.errors.paid_at" />
+                            <small v-if="form.errors.paid_at" class="text-red-500">{{ form.errors.paid_at }}</small>
                         </div>
                         <div class="flex flex-col gap-1 md:col-span-2">
                             <label class="text-sm font-medium">Payment Screenshot</label>
@@ -441,7 +449,8 @@ if (form.helper_id && selectedHelper.value) {
                         </div>
                         <div class="flex flex-col gap-1 md:col-span-2">
                             <label class="text-sm font-medium">Notes</label>
-                            <Textarea v-model="form.notes" rows="3" />
+                            <Textarea v-model="form.notes" rows="3" :invalid="!!form.errors.notes" />
+                            <small v-if="form.errors.notes" class="text-red-500">{{ form.errors.notes }}</small>
                         </div>
                     </div>
                 </section>

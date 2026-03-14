@@ -408,6 +408,53 @@ test('create page passes existing payments for smart defaults', function () {
         );
 });
 
+test('creating salary payment with end date before start date fails validation', function () {
+    $admin = User::factory()->admin()->create();
+    $helper = Helper::factory()->create();
+
+    $this->actingAs($admin)
+        ->post('/salary-payments', [
+            'helper_id' => $helper->id,
+            'month' => 3,
+            'year' => 2026,
+            'base_salary' => 600,
+            'working_days_start' => '2026-03-15',
+            'working_days_end' => '2026-03-01',
+            'total_calendar_days' => 15,
+            'sundays_in_period' => 2,
+            'pro_rated_amount' => 600,
+            'extra_rest_days_worked' => 0,
+            'rest_day_rate' => 23.08,
+            'extra_rest_day_pay' => 0,
+            'total_amount' => 600,
+            'payment_method' => 'bank_transfer',
+        ])
+        ->assertSessionHasErrors(['working_days_end']);
+});
+
+test('updating salary payment with end date before start date fails validation', function () {
+    $admin = User::factory()->admin()->create();
+    $payment = SalaryPayment::factory()->create();
+
+    $this->actingAs($admin)
+        ->put("/salary-payments/{$payment->id}", [
+            'month' => 3,
+            'year' => 2026,
+            'base_salary' => 600,
+            'working_days_start' => '2026-03-15',
+            'working_days_end' => '2026-03-01',
+            'total_calendar_days' => 15,
+            'sundays_in_period' => 2,
+            'pro_rated_amount' => 600,
+            'extra_rest_days_worked' => 0,
+            'rest_day_rate' => 23.08,
+            'extra_rest_day_pay' => 0,
+            'total_amount' => 600,
+            'payment_method' => 'bank_transfer',
+        ])
+        ->assertSessionHasErrors(['working_days_end']);
+});
+
 test('edit page passes existing payments and screenshot url', function () {
     $admin = User::factory()->admin()->create();
     $payment = SalaryPayment::factory()->create();

@@ -84,7 +84,10 @@ const form = useForm({
     sundays_in_period: props.payment.sundays_in_period,
     pro_rated_amount: Number(props.payment.pro_rated_amount),
     extra_rest_days_worked: props.payment.extra_rest_days_worked,
-    sundays_worked_dates: (props.payment.sundays_worked_dates ?? []).map((d: string) => new Date(d)) as (Date | null)[],
+    sundays_worked_dates: Array.from(
+        { length: Math.max(props.payment.extra_rest_days_worked, (props.payment.sundays_worked_dates ?? []).length) },
+        (_, i) => (props.payment.sundays_worked_dates?.[i] ? new Date(props.payment.sundays_worked_dates[i]) : null),
+    ) as (Date | null)[],
     rest_day_rate: Number(props.payment.rest_day_rate),
     extra_rest_day_pay: Number(props.payment.extra_rest_day_pay),
     ad_hoc_payments: (props.payment.ad_hoc_payments ?? []) as { description: string; amount: number }[],
@@ -104,6 +107,27 @@ const paymentMethods = [
 
 const isDuplicate = computed(() => {
     return props.existingPayments.some(p => p.month === form.month && p.year === form.year);
+});
+
+function countSundays(start: Date, end: Date): number {
+    let count = 0;
+    const current = new Date(start);
+    while (current <= end) {
+        if (current.getDay() === 0) count++;
+        current.setDate(current.getDate() + 1);
+    }
+    return count;
+}
+
+watch([() => form.working_days_start, () => form.working_days_end], () => {
+    if (form.working_days_start && form.working_days_end) {
+        const start = new Date(form.working_days_start);
+        const end = new Date(form.working_days_end);
+        const diffTime = Math.abs(end.getTime() - start.getTime());
+        form.total_calendar_days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        form.sundays_in_period = countSundays(start, end);
+        recalculate();
+    }
 });
 
 watch(() => form.extra_rest_days_worked, (count) => {
@@ -236,19 +260,23 @@ function submit() {
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div class="flex flex-col gap-1">
                             <label class="text-sm font-medium">Start Date</label>
-                            <DatePicker v-model="form.working_days_start" dateFormat="yy-mm-dd" showIcon />
+                            <DatePicker v-model="form.working_days_start" dateFormat="yy-mm-dd" showIcon :invalid="!!form.errors.working_days_start" />
+                            <small v-if="form.errors.working_days_start" class="text-red-500">{{ form.errors.working_days_start }}</small>
                         </div>
                         <div class="flex flex-col gap-1">
                             <label class="text-sm font-medium">End Date</label>
-                            <DatePicker v-model="form.working_days_end" dateFormat="yy-mm-dd" showIcon />
+                            <DatePicker v-model="form.working_days_end" dateFormat="yy-mm-dd" showIcon :invalid="!!form.errors.working_days_end" />
+                            <small v-if="form.errors.working_days_end" class="text-red-500">{{ form.errors.working_days_end }}</small>
                         </div>
                         <div class="flex flex-col gap-1">
                             <label class="text-sm font-medium">Calendar Days</label>
-                            <InputNumber v-model="form.total_calendar_days" :min="0" />
+                            <InputNumber v-model="form.total_calendar_days" :min="0" :invalid="!!form.errors.total_calendar_days" />
+                            <small v-if="form.errors.total_calendar_days" class="text-red-500">{{ form.errors.total_calendar_days }}</small>
                         </div>
                         <div class="flex flex-col gap-1">
                             <label class="text-sm font-medium">Sundays</label>
-                            <InputNumber v-model="form.sundays_in_period" :min="0" />
+                            <InputNumber v-model="form.sundays_in_period" :min="0" :invalid="!!form.errors.sundays_in_period" />
+                            <small v-if="form.errors.sundays_in_period" class="text-red-500">{{ form.errors.sundays_in_period }}</small>
                         </div>
                     </div>
                 </section>
@@ -258,11 +286,13 @@ function submit() {
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div class="flex flex-col gap-1">
                             <label class="text-sm font-medium">Base Salary</label>
-                            <InputNumber v-model="form.base_salary" mode="currency" currency="SGD" />
+                            <InputNumber v-model="form.base_salary" mode="currency" currency="SGD" :invalid="!!form.errors.base_salary" />
+                            <small v-if="form.errors.base_salary" class="text-red-500">{{ form.errors.base_salary }}</small>
                         </div>
                         <div class="flex flex-col gap-1">
                             <label class="text-sm font-medium">Sundays Worked</label>
-                            <InputNumber v-model="form.extra_rest_days_worked" :min="0" />
+                            <InputNumber v-model="form.extra_rest_days_worked" :min="0" :invalid="!!form.errors.extra_rest_days_worked" />
+                            <small v-if="form.errors.extra_rest_days_worked" class="text-red-500">{{ form.errors.extra_rest_days_worked }}</small>
                         </div>
                     </div>
 
@@ -352,11 +382,13 @@ function submit() {
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div class="flex flex-col gap-1">
                             <label class="text-sm font-medium">Payment Method</label>
-                            <Select v-model="form.payment_method" :options="paymentMethods" optionLabel="label" optionValue="value" />
+                            <Select v-model="form.payment_method" :options="paymentMethods" optionLabel="label" optionValue="value" :invalid="!!form.errors.payment_method" />
+                            <small v-if="form.errors.payment_method" class="text-red-500">{{ form.errors.payment_method }}</small>
                         </div>
                         <div class="flex flex-col gap-1">
                             <label class="text-sm font-medium">Paid At</label>
-                            <DatePicker v-model="form.paid_at" dateFormat="yy-mm-dd" showIcon />
+                            <DatePicker v-model="form.paid_at" dateFormat="yy-mm-dd" showIcon :invalid="!!form.errors.paid_at" />
+                            <small v-if="form.errors.paid_at" class="text-red-500">{{ form.errors.paid_at }}</small>
                         </div>
                         <div class="flex flex-col gap-1 md:col-span-2">
                             <label class="text-sm font-medium">Payment Screenshot</label>
@@ -372,7 +404,8 @@ function submit() {
                         </div>
                         <div class="flex flex-col gap-1 md:col-span-2">
                             <label class="text-sm font-medium">Notes</label>
-                            <Textarea v-model="form.notes" rows="3" />
+                            <Textarea v-model="form.notes" rows="3" :invalid="!!form.errors.notes" />
+                            <small v-if="form.errors.notes" class="text-red-500">{{ form.errors.notes }}</small>
                         </div>
                     </div>
                 </section>
