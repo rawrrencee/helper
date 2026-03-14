@@ -189,12 +189,12 @@ function toggleCustomFrequency() {
 
         <div class="mx-auto max-w-5xl p-6 space-y-8">
             <!-- Patient Details -->
-            <div class="flex items-start justify-between">
-                <div>
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div class="min-w-0">
                     <h1 class="text-2xl font-semibold">{{ patient.name }}</h1>
                     <p class="text-muted-foreground">{{ isAdmin && patient.nric ? patient.nric : patient.masked_nric }}</p>
                 </div>
-                <div v-if="isAdmin" class="flex gap-2">
+                <div v-if="isAdmin" class="flex shrink-0 gap-2">
                     <Link :href="`/patients/${patient.id}/edit`">
                         <Button variant="outline">Edit</Button>
                     </Link>
@@ -237,7 +237,7 @@ function toggleCustomFrequency() {
 
                 <DataTable :value="scheduledMedications" dataKey="id" stripedRows class="text-sm">
                     <Column field="name" header="Medication" />
-                    <Column field="dosage" header="Dosage">
+                    <Column field="dosage" header="Dosage" headerClass="hidden md:table-cell" class="hidden md:table-cell">
                         <template #body="{ data }">
                             {{ data.dosage ?? '-' }}
                         </template>
@@ -247,12 +247,12 @@ function toggleCustomFrequency() {
                             {{ formatFrequency(data.frequency) }}
                         </template>
                     </Column>
-                    <Column field="notes" header="Notes">
+                    <Column field="notes" header="Notes" headerClass="hidden md:table-cell" class="hidden md:table-cell">
                         <template #body="{ data }">
                             {{ data.notes ?? '-' }}
                         </template>
                     </Column>
-                    <Column v-if="isAdmin" header="" style="width: 8rem">
+                    <Column v-if="isAdmin" header="">
                         <template #body="{ data }">
                             <div class="flex gap-1">
                                 <PrimeButton icon="pi pi-pencil" severity="secondary" text rounded size="small" @click="openEditMedicationDialog(data)" />
@@ -275,7 +275,7 @@ function toggleCustomFrequency() {
 
                 <DataTable :value="optionalMedications" dataKey="id" stripedRows class="text-sm opacity-80">
                     <Column field="name" header="Medication" />
-                    <Column field="dosage" header="Dosage">
+                    <Column field="dosage" header="Dosage" headerClass="hidden md:table-cell" class="hidden md:table-cell">
                         <template #body="{ data }">
                             {{ data.dosage ?? '-' }}
                         </template>
@@ -285,12 +285,12 @@ function toggleCustomFrequency() {
                             {{ formatFrequency(data.frequency) }}
                         </template>
                     </Column>
-                    <Column field="notes" header="Notes">
+                    <Column field="notes" header="Notes" headerClass="hidden md:table-cell" class="hidden md:table-cell">
                         <template #body="{ data }">
                             {{ data.notes ?? '-' }}
                         </template>
                     </Column>
-                    <Column v-if="isAdmin" header="" style="width: 8rem">
+                    <Column v-if="isAdmin" header="">
                         <template #body="{ data }">
                             <div class="flex gap-1">
                                 <PrimeButton icon="pi pi-pencil" severity="secondary" text rounded size="small" @click="openEditMedicationDialog(data)" />

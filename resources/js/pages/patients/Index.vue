@@ -54,13 +54,13 @@ const breadcrumbs: BreadcrumbItem[] = [
                         </Link>
                     </template>
                 </Column>
-                <Column field="masked_nric" header="NRIC" />
+                <Column field="masked_nric" header="NRIC" headerClass="hidden md:table-cell" class="hidden md:table-cell" />
                 <Column field="age" header="Age">
                     <template #body="{ data }">
                         {{ data.age ?? '-' }}
                     </template>
                 </Column>
-                <Column field="phone" header="Phone">
+                <Column field="phone" header="Phone" headerClass="hidden md:table-cell" class="hidden md:table-cell">
                     <template #body="{ data }">
                         {{ data.phone ?? '-' }}
                     </template>
