@@ -196,14 +196,33 @@ function generateCalendarEvents(schedule: PatientSchedule, start: Date, end: Dat
                 medications.push({
                     title: `${med.time.substring(0, 5)} ${med.title}`,
                     date: dateStr,
-                    color: med.is_optional ? '#93c5fd' : '#3b82f6',
+                    color: '#3b82f6',
                     extendedProps: { ...med, source: 'medication' },
                 });
             }
         }
     }
 
-    return [...appointments, ...activities, ...medications];
+    // Group medications by date when >2 per day
+    const medsByDate: Record<string, any[]> = {};
+    for (const med of medications) {
+        (medsByDate[med.date] ??= []).push(med);
+    }
+    const groupedMeds: any[] = [];
+    for (const [date, meds] of Object.entries(medsByDate)) {
+        if (meds.length <= 2) {
+            groupedMeds.push(...meds);
+        } else {
+            groupedMeds.push({
+                title: `💊 ${meds.length} medications`,
+                date,
+                color: '#3b82f6',
+                extendedProps: { source: 'medication-group', count: meds.length },
+            });
+        }
+    }
+
+    return [...appointments, ...activities, ...groupedMeds];
 }
 
 function calendarOptions(schedule: PatientSchedule) {
@@ -636,21 +655,23 @@ function downloadIcs(apt: any) {
                 No events on this day.
             </div>
             <div v-else class="space-y-3">
-                <div v-for="(evt, idx) in selectedDateEvents" :key="idx" class="flex items-start gap-3 rounded-lg border p-3">
-                    <span class="mt-1.5 h-3 w-3 shrink-0 rounded-full" :style="{ background: evt.color }"></span>
+                <div v-for="(evt, idx) in selectedDateEvents" :key="idx" class="flex gap-3 rounded-lg border p-3">
+                    <div class="w-16 shrink-0 text-right">
+                        <span class="text-sm font-semibold">{{ formatTime(evt.time_of_day || evt.time) }}</span>
+                    </div>
+                    <div class="h-auto w-0.5 shrink-0 rounded-full" :style="{ background: evt.color }"></div>
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2">
                             <span class="font-medium">{{ evt.title }}</span>
                             <PrimeButton v-if="evt.source === 'appointment'" icon="pi pi-calendar-plus" severity="secondary" text rounded size="small" class="!w-7 !h-7" @click="downloadIcs({ ...evt, date: selectedDate })" v-tooltip.top="'Add to Calendar'" />
                         </div>
                         <div class="text-sm text-muted-foreground">
-                            {{ formatTime(evt.time_of_day || evt.time) }}
-                            <template v-if="evt.source === 'medication'"> &mdash; Medication</template>
-                            <template v-else-if="evt.source === 'appointment'"> &mdash; Appointment</template>
-                            <template v-else-if="evt.event_type"> &mdash; {{ evt.event_type }}</template>
+                            <template v-if="evt.source === 'medication'">Medication</template>
+                            <template v-else-if="evt.source === 'appointment'">Appointment</template>
+                            <template v-else-if="evt.event_type">{{ evt.event_type }}</template>
+                            <template v-if="evt.location"> · {{ evt.location }}</template>
                         </div>
                         <div v-if="evt.notes" class="mt-1 text-sm text-muted-foreground">{{ evt.notes }}</div>
-                        <div v-if="evt.location" class="mt-1 text-sm text-muted-foreground">Location: {{ evt.location }}</div>
                     </div>
                 </div>
             </div>

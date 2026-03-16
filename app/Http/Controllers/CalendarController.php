@@ -51,7 +51,7 @@ class CalendarController extends Controller
     {
         $patients->load([
             'scheduleEvents' => fn ($q) => $q->where('is_active', true),
-            'medications',
+            'medications' => fn ($q) => $q->where('is_optional', false),
             'appointments',
         ]);
 
@@ -66,7 +66,7 @@ class CalendarController extends Controller
                         'title' => $medication->name.($medication->dosage ? " ({$medication->dosage})" : ''),
                         'time' => $time,
                         'type' => 'medication',
-                        'is_optional' => $medication->is_optional,
+                        'is_optional' => false,
                         'recurrence_type' => 'daily',
                         'recurrence_days' => null,
                     ];
