@@ -3,6 +3,7 @@ import { Head, Link } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import FullCalendar from '@fullcalendar/vue3';
 import dayGridPlugin from '@fullcalendar/daygrid';
+import listPlugin from '@fullcalendar/list';
 import Dialog from 'primevue/dialog';
 import PrimeButton from 'primevue/button';
 import Card from 'primevue/card';
@@ -80,8 +81,9 @@ function generateCalendarEvents(schedule: PatientSchedule, start: Date, end: Dat
     for (const apt of schedule.appointments) {
         if (apt.status !== 'cancelled') {
             appointments.push({
-                title: `${apt.time ? apt.time.substring(0, 5) + ' ' : ''}${apt.title}`,
-                date: apt.date,
+                title: apt.title,
+                start: apt.time ? `${apt.date}T${apt.time}` : apt.date,
+                allDay: !apt.time,
                 color: eventColor('appointment'),
                 extendedProps: { ...apt, source: 'appointment' },
             });
@@ -95,8 +97,9 @@ function generateCalendarEvents(schedule: PatientSchedule, start: Date, end: Dat
         for (const evt of schedule.scheduleEvents) {
             if (evt.recurrence_type === 'daily' || (evt.recurrence_days && evt.recurrence_days.includes(dow))) {
                 activities.push({
-                    title: `${evt.time_of_day.substring(0, 5)} ${evt.title}`,
-                    date: dateStr,
+                    title: evt.title,
+                    start: `${dateStr}T${evt.time_of_day}`,
+                    allDay: false,
                     color: eventColor(evt.event_type),
                     extendedProps: { ...evt, source: 'schedule' },
                 });
@@ -106,8 +109,9 @@ function generateCalendarEvents(schedule: PatientSchedule, start: Date, end: Dat
         for (const med of schedule.medicationEvents) {
             if (med.recurrence_type === 'daily' || (med.recurrence_days && med.recurrence_days.includes(dow))) {
                 medications.push({
-                    title: `${med.time.substring(0, 5)} ${med.title}`,
-                    date: dateStr,
+                    title: med.title,
+                    start: `${dateStr}T${med.time}`,
+                    allDay: false,
                     color: '#3b82f6',
                     extendedProps: { ...med, source: 'medication' },
                 });
@@ -118,7 +122,8 @@ function generateCalendarEvents(schedule: PatientSchedule, start: Date, end: Dat
     // Group medications by date when >2 per day
     const medsByDate: Record<string, any[]> = {};
     for (const med of medications) {
-        (medsByDate[med.date] ??= []).push(med);
+        const dateKey = med.start.substring(0, 10);
+        (medsByDate[dateKey] ??= []).push(med);
     }
     const groupedMeds: any[] = [];
     for (const [date, meds] of Object.entries(medsByDate)) {
@@ -127,7 +132,8 @@ function generateCalendarEvents(schedule: PatientSchedule, start: Date, end: Dat
         } else {
             groupedMeds.push({
                 title: `💊 ${meds.length} medications`,
-                date,
+                start: date,
+                allDay: true,
                 color: '#3b82f6',
                 extendedProps: { source: 'medication-group', count: meds.length },
             });
@@ -139,20 +145,26 @@ function generateCalendarEvents(schedule: PatientSchedule, start: Date, end: Dat
 
 function calendarOptions(schedule: PatientSchedule) {
     return {
-        plugins: [dayGridPlugin],
-        initialView: 'dayGridMonth',
+        plugins: [dayGridPlugin, listPlugin],
+        initialView: 'listWeek',
         events: (info: any, successCallback: (events: any[]) => void) => {
             successCallback(generateCalendarEvents(schedule, info.start, info.end));
         },
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
-            right: '',
+            right: 'listWeek,dayGridMonth',
         },
+        buttonText: {
+            today: 'Today',
+            week: 'Week',
+            month: 'Month',
+        },
+        noEventsContent: 'No events this week.',
         height: 'auto',
         dayMaxEvents: 4,
         dateClick: (info: any) => showDayDetail(schedule, info.dateStr),
-        eventClick: (info: any) => showDayDetail(schedule, info.event.startStr),
+        eventClick: (info: any) => showDayDetail(schedule, info.event.startStr.substring(0, 10)),
     };
 }
 

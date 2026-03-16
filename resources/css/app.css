@@ -212,3 +212,29 @@
 .dark .fc .fc-more-link {
     color: var(--muted-foreground);
 }
+
+.dark .fc .fc-list-event:hover td {
+    background-color: var(--accent) !important;
+}
+
+.dark .fc .fc-list-day-cushion {
+    background-color: var(--muted) !important;
+}
+
+.dark .fc .fc-list-event td {
+    color: var(--foreground);
+}
+
+/* Mobile: stack toolbar into 3 rows (nav, title, view toggle) */
+@media (max-width: 640px) {
+    .fc .fc-toolbar {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .fc .fc-toolbar-chunk {
+        display: flex;
+        justify-content: center;
+    }
+}
