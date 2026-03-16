@@ -190,18 +190,23 @@ function toggleCustomFrequency() {
         <Head :title="patient.name" />
         <Toast />
 
-        <div class="mx-auto max-w-5xl p-6 space-y-8">
+        <div class="p-6 space-y-8">
             <!-- Patient Details -->
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div class="min-w-0">
                     <h1 class="text-2xl font-semibold">{{ patient.name }}</h1>
                     <p class="text-muted-foreground">{{ isAdmin && patient.nric ? patient.nric : patient.masked_nric }}</p>
                 </div>
-                <div v-if="isAdmin" class="flex shrink-0 gap-2">
-                    <Link :href="`/patients/${patient.id}/edit`">
-                        <Button variant="outline">Edit</Button>
+                <div class="flex shrink-0 gap-2">
+                    <Link :href="`/patients/${patient.id}/schedule`">
+                        <Button variant="outline">Schedule</Button>
                     </Link>
-                    <Button variant="destructive" @click="confirmDeletePatient">Delete</Button>
+                    <template v-if="isAdmin">
+                        <Link :href="`/patients/${patient.id}/edit`">
+                            <Button variant="outline">Edit</Button>
+                        </Link>
+                        <Button variant="destructive" @click="confirmDeletePatient">Delete</Button>
+                    </template>
                 </div>
             </div>
 

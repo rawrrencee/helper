@@ -209,6 +209,46 @@ function saveNotes(appointment: Appointment) {
         },
     });
 }
+
+function downloadIcs(appointment: Appointment) {
+    const dateClean = appointment.appointment_date.replace(/-/g, '');
+    const time = appointment.appointment_time;
+
+    const lines = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'CALSCALE:GREGORIAN',
+        'PRODID:-//Helper//Appointment//EN',
+        'BEGIN:VEVENT',
+        `UID:${Date.now()}-${Math.random().toString(36).substring(2)}@helper`,
+    ];
+
+    if (time) {
+        const timeClean = time.replace(/:/g, '').substring(0, 4) + '00';
+        lines.push(`DTSTART:${dateClean}T${timeClean}`);
+        const startHour = parseInt(time.substring(0, 2));
+        const endHour = (startHour + 1) % 24;
+        const endTime = `${String(endHour).padStart(2, '0')}${timeClean.substring(2)}`;
+        lines.push(`DTEND:${dateClean}T${endTime}`);
+    } else {
+        lines.push(`DTSTART;VALUE=DATE:${dateClean}`);
+        lines.push(`DTEND;VALUE=DATE:${dateClean}`);
+    }
+
+    lines.push(`SUMMARY:${appointment.title}`);
+    if (appointment.location) lines.push(`LOCATION:${appointment.location}`);
+    const descParts = [appointment.notes, appointment.doctor ? `Doctor: ${appointment.doctor}` : ''].filter(Boolean);
+    if (descParts.length) lines.push(`DESCRIPTION:${descParts.join(' | ')}`);
+    lines.push('END:VEVENT', 'END:VCALENDAR');
+
+    const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${appointment.title.replace(/[^a-zA-Z0-9]/g, '_')}.ics`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
 </script>
 
 <template>
@@ -243,6 +283,7 @@ function saveNotes(appointment: Appointment) {
                                             <p v-if="appointment.doctor" class="text-sm text-muted-foreground">Dr. {{ appointment.doctor }}</p>
                                         </div>
                                         <div class="flex items-center gap-2">
+                                            <PrimeButton icon="pi pi-calendar-plus" severity="secondary" text rounded size="small" @click="downloadIcs(appointment)" v-tooltip.top="'Add to Calendar'" />
                                             <Tag v-if="appointment.patient" :value="appointment.patient.name" severity="secondary" />
                                             <Tag :value="capitalize(appointment.status)" :severity="statusSeverity(appointment.status)" />
                                         </div>
@@ -288,6 +329,7 @@ function saveNotes(appointment: Appointment) {
                                             <p v-if="appointment.doctor" class="text-sm text-muted-foreground">Dr. {{ appointment.doctor }}</p>
                                         </div>
                                         <div class="flex items-center gap-2">
+                                            <PrimeButton icon="pi pi-calendar-plus" severity="secondary" text rounded size="small" @click="downloadIcs(appointment)" v-tooltip.top="'Add to Calendar'" />
                                             <Tag v-if="appointment.patient" :value="appointment.patient.name" severity="secondary" />
                                             <Tag :value="capitalize(appointment.status)" :severity="statusSeverity(appointment.status)" />
                                         </div>
@@ -339,7 +381,7 @@ function saveNotes(appointment: Appointment) {
                     </div>
                     <div class="flex flex-col gap-1">
                         <label class="text-sm font-medium">Time</label>
-                        <DatePicker v-model="appointmentTimeDate" timeOnly hourFormat="24" placeholder="Select time" />
+                        <DatePicker v-model="appointmentTimeDate" timeOnly hourFormat="12" placeholder="Select time" />
                     </div>
                 </div>
 

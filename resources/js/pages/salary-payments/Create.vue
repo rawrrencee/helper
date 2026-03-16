@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, router, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import DatePicker from 'primevue/datepicker';
 import Select from 'primevue/select';
 import Textarea from 'primevue/textarea';
+import Checkbox from 'primevue/checkbox';
+import Tag from 'primevue/tag';
 import Message from 'primevue/message';
 import Toast from 'primevue/toast';
 import Image from 'primevue/image';
@@ -21,9 +23,21 @@ type HelperOption = {
     round_up_rest_day_rate: boolean;
 };
 
+type ClaimItem = {
+    id: number;
+    helper_id: number;
+    month: number;
+    year: number;
+    title: string;
+    amount: string;
+    status: string;
+    salary_payments: { id: number }[];
+};
+
 const props = defineProps<{
     helpers: HelperOption[];
     existingPayments: Record<number, { month: number; year: number }[]>;
+    claims: Record<string, ClaimItem[]>;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -98,6 +112,7 @@ const form = useForm({
     rest_day_rate: 0,
     extra_rest_day_pay: 0,
     ad_hoc_payments: [] as { description: string; amount: number }[],
+    claim_ids: [] as number[],
     total_amount: 0,
     payment_method: 'bank_transfer',
     paid_at: null as Date | null,
@@ -165,6 +180,39 @@ watch(() => form.extra_rest_days_worked, (count) => {
 
 const adHocTotal = computed(() => form.ad_hoc_payments.reduce((sum, item) => sum + (Number(item.amount) || 0), 0));
 
+const matchingClaims = computed<ClaimItem[]>(() => {
+    if (!form.helper_id || !form.month || !form.year) return [];
+    const key = `${form.helper_id}-${form.month}-${form.year}`;
+    return props.claims[key] ?? [];
+});
+
+const selectedClaimsTotal = computed(() => {
+    return matchingClaims.value
+        .filter(c => form.claim_ids.includes(c.id))
+        .reduce((sum, c) => sum + Number(c.amount), 0);
+});
+
+function toggleClaim(claimId: number) {
+    const idx = form.claim_ids.indexOf(claimId);
+    if (idx === -1) {
+        form.claim_ids.push(claimId);
+    } else {
+        form.claim_ids.splice(idx, 1);
+    }
+    recalculate();
+}
+
+function approveClaimInline(claim: ClaimItem) {
+    router.put(`/claims/${claim.id}`, { status: 'approved' }, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            claim.status = 'approved';
+            toast.add({ severity: 'success', summary: 'Approved', detail: `Claim "${claim.title}" approved.`, life: 3000 });
+        },
+    });
+}
+
 watch([() => form.base_salary, () => form.extra_rest_days_worked, () => form.total_calendar_days, () => form.sundays_in_period], () => {
     recalculate();
 });
@@ -195,7 +243,7 @@ function recalculate() {
         form.pro_rated_amount = Math.round(form.rest_day_rate * Math.max(workingDays, 0) * 100) / 100;
     }
     form.extra_rest_day_pay = Math.round(form.rest_day_rate * form.extra_rest_days_worked * 100) / 100;
-    form.total_amount = Math.round((form.pro_rated_amount + form.extra_rest_day_pay + adHocTotal.value) * 100) / 100;
+    form.total_amount = Math.round((form.pro_rated_amount + form.extra_rest_day_pay + adHocTotal.value + selectedClaimsTotal.value) * 100) / 100;
 }
 
 function formatDate(date: Date): string {
@@ -235,6 +283,7 @@ function submit() {
         paid_at: data.paid_at ? formatDate(data.paid_at) : null,
         sundays_worked_dates: data.sundays_worked_dates.filter((d): d is Date => d !== null).map(formatDate),
         ad_hoc_payments: data.ad_hoc_payments.length > 0 ? data.ad_hoc_payments : null,
+        claim_ids: data.claim_ids.length > 0 ? data.claim_ids : null,
     })).post('/salary-payments', {
         onSuccess: () => toast.add({ severity: 'success', summary: 'Created', detail: 'Salary payment created.', life: 3000 }),
     });
@@ -414,6 +463,41 @@ if (form.helper_id && selectedHelper.value) {
 
                     <div v-if="form.ad_hoc_payments.length > 0" class="mt-3 text-sm text-muted-foreground">
                         Ad-hoc subtotal: ${{ adHocTotal.toFixed(2) }}
+                    </div>
+                </section>
+
+                <section v-if="matchingClaims.length > 0">
+                    <h2 class="mb-4 text-lg font-medium">Claims</h2>
+                    <p class="mb-3 text-sm text-muted-foreground">Select claims to include in this payment.</p>
+
+                    <div class="space-y-3">
+                        <div v-for="claim in matchingClaims" :key="claim.id" class="flex items-center gap-3 rounded-lg border p-3">
+                            <Checkbox
+                                :modelValue="form.claim_ids.includes(claim.id)"
+                                :binary="true"
+                                @update:modelValue="toggleClaim(claim.id)"
+                            />
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-medium">{{ claim.title }}</span>
+                                    <Tag :severity="claim.status === 'approved' ? 'success' : 'warn'" :value="claim.status" class="text-xs" />
+                                    <Tag v-if="claim.salary_payments.length > 0" severity="secondary" value="Already included" class="text-xs" />
+                                </div>
+                            </div>
+                            <span class="font-medium">${{ Number(claim.amount).toFixed(2) }}</span>
+                            <button
+                                v-if="claim.status === 'pending'"
+                                type="button"
+                                class="text-xs text-blue-600 hover:underline dark:text-blue-400"
+                                @click="approveClaimInline(claim)"
+                            >
+                                Approve
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="form.claim_ids.length > 0" class="mt-3 text-sm text-muted-foreground">
+                        Claims subtotal: ${{ selectedClaimsTotal.toFixed(2) }}
                     </div>
                 </section>
 

@@ -300,3 +300,8 @@ Vue components must have a single root element.
 - IMPORTANT: Activate `tailwindcss-development` every time you're working with a Tailwind CSS or styling-related task.
 
 </laravel-boost-guidelines>
+
+## Layout Preferences
+
+- Pages should be mobile-first but avoid overly narrow max-width constraints (e.g., `max-w-3xl`). Prefer full-width layouts with padding (`p-6`) — matching the pattern used by salary-payments/Index and other full-width pages.
+- Use consistent button components within the same action group (don't mix shadcn Button and PrimeButton in the same row).

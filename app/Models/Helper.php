@@ -58,6 +58,14 @@ class Helper extends Model
     }
 
     /**
+     * @return HasMany<Claim, $this>
+     */
+    public function claims(): HasMany
+    {
+        return $this->hasMany(Claim::class);
+    }
+
+    /**
      * @return BelongsToMany<Patient, $this>
      */
     public function patients(): BelongsToMany

@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\ClaimController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\FamilyInfoController;
@@ -8,6 +10,7 @@ use App\Http\Controllers\HelperController;
 use App\Http\Controllers\MedicationController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\SalaryPaymentController;
+use App\Http\Controllers\ScheduleController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
@@ -40,6 +43,16 @@ Route::middleware(['auth'])->group(function () {
 
     Route::resource('appointments', AppointmentController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::patch('appointments/{appointment}/notes', [AppointmentController::class, 'updateNotes'])->name('appointments.update-notes');
+
+    Route::resource('claims', ClaimController::class)->except(['edit']);
+    Route::get('claims/{claim}/screenshot', [ClaimController::class, 'screenshot'])->name('claims.screenshot');
+
+    Route::get('calendars', [CalendarController::class, 'index'])->name('calendars.index');
+
+    Route::get('patients/{patient}/schedule', [ScheduleController::class, 'index'])->name('patients.schedule');
+    Route::post('patients/{patient}/schedule-events', [ScheduleController::class, 'store'])->name('schedule-events.store');
+    Route::put('schedule-events/{scheduleEvent}', [ScheduleController::class, 'update'])->name('schedule-events.update');
+    Route::delete('schedule-events/{scheduleEvent}', [ScheduleController::class, 'destroy'])->name('schedule-events.destroy');
 });
 
 require __DIR__.'/settings.php';

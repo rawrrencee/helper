@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreSalaryPaymentRequest;
 use App\Http\Requests\UpdateSalaryPaymentRequest;
+use App\Models\Claim;
 use App\Models\Helper;
 use App\Models\SalaryPayment;
 use App\Models\Setting;
@@ -67,6 +68,12 @@ class SalaryPaymentController extends Controller
 
         $helpers = Helper::query()->orderBy('name')->get(['id', 'name', 'monthly_salary', 'round_up_rest_day_rate']);
 
+        $claims = Claim::query()
+            ->whereIn('status', ['approved', 'pending'])
+            ->with('salaryPayments:id')
+            ->get()
+            ->groupBy(fn ($c) => "{$c->helper_id}-{$c->month}-{$c->year}");
+
         return Inertia::render('salary-payments/Create', [
             'helpers' => $helpers,
             'existingPayments' => SalaryPayment::query()
@@ -74,6 +81,7 @@ class SalaryPaymentController extends Controller
                 ->get()
                 ->groupBy('helper_id')
                 ->map(fn ($payments) => $payments->map(fn ($p) => ['month' => $p->month, 'year' => $p->year])->values()),
+            'claims' => $claims,
         ]);
     }
 
@@ -82,11 +90,15 @@ class SalaryPaymentController extends Controller
      */
     public function store(StoreSalaryPaymentRequest $request): RedirectResponse
     {
-        $payment = SalaryPayment::create($request->safe()->except('screenshot'));
+        $payment = SalaryPayment::create($request->safe()->except(['screenshot', 'claim_ids']));
 
         if ($request->hasFile('screenshot')) {
             $path = $request->file('screenshot')->store("screenshots/{$payment->helper_id}", 'local');
             $payment->update(['payment_screenshot_path' => $path]);
+        }
+
+        if ($request->input('claim_ids')) {
+            $payment->claims()->sync($request->input('claim_ids'));
         }
 
         return to_route('salary-payments.index')->with('success', 'Salary payment created.');

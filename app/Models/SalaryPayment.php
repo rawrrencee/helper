@@ -6,6 +6,7 @@ use Database\Factories\SalaryPaymentFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class SalaryPayment extends Model
 {
@@ -47,5 +48,13 @@ class SalaryPayment extends Model
     public function helper(): BelongsTo
     {
         return $this->belongsTo(Helper::class);
+    }
+
+    /**
+     * @return BelongsToMany<Claim, $this>
+     */
+    public function claims(): BelongsToMany
+    {
+        return $this->belongsToMany(Claim::class)->withTimestamps();
     }
 }

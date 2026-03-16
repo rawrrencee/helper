@@ -75,4 +75,12 @@ class Patient extends Model
     {
         return $this->hasMany(Appointment::class);
     }
+
+    /**
+     * @return HasMany<ScheduleEvent, $this>
+     */
+    public function scheduleEvents(): HasMany
+    {
+        return $this->hasMany(ScheduleEvent::class);
+    }
 }

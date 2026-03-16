@@ -171,3 +171,44 @@
         @apply bg-background text-foreground;
     }
 }
+
+/* FullCalendar dark mode */
+.dark .fc {
+    --fc-border-color: var(--border);
+    --fc-page-bg-color: var(--background);
+    --fc-neutral-bg-color: var(--muted);
+    --fc-neutral-text-color: var(--foreground);
+    --fc-today-bg-color: hsl(0 0% 14.9%);
+}
+
+.dark .fc .fc-col-header-cell {
+    background-color: var(--muted);
+    color: var(--foreground);
+}
+
+.dark .fc .fc-daygrid-day-number {
+    color: var(--foreground);
+}
+
+.dark .fc .fc-button-primary {
+    background-color: var(--secondary);
+    border-color: var(--border);
+    color: var(--foreground);
+}
+
+.dark .fc .fc-button-primary:hover {
+    background-color: var(--accent);
+}
+
+.dark .fc .fc-button-primary:not(:disabled).fc-button-active {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+}
+
+.dark .fc .fc-toolbar-title {
+    color: var(--foreground);
+}
+
+.dark .fc .fc-more-link {
+    color: var(--muted-foreground);
+}

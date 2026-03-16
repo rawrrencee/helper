@@ -71,6 +71,9 @@ class DashboardController extends Controller
                 'familyInformation' => Setting::getValue('family_information'),
                 'patientMedications' => $helper ? $this->getPatientMedications($helper, optional: false) : [],
                 'patientOptionalMedications' => $helper ? $this->getPatientMedications($helper, optional: true) : [],
+                'patientSchedules' => $helper ? CalendarController::buildPatientSchedules(
+                    $helper->patients()->orderBy('name')->get()
+                ) : [],
             ],
         ]);
     }

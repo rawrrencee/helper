@@ -48,6 +48,8 @@ class StoreSalaryPaymentRequest extends FormRequest
             'payment_method' => ['required', 'in:bank_transfer,paynow'],
             'paid_at' => ['nullable', 'date'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'claim_ids' => ['nullable', 'array'],
+            'claim_ids.*' => ['exists:claims,id'],
         ];
     }
 
