@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Form, Head, router, usePage } from '@inertiajs/vue3';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import { Button } from '@/components/ui/button';
@@ -9,10 +9,23 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import AuthBase from '@/layouts/AuthLayout.vue';
 import { store } from '@/routes/login';
+import { ref } from 'vue';
 
 defineProps<{
     status?: string;
 }>();
+
+const page = usePage();
+const demoLoading = ref<string | null>(null);
+
+function demoLogin(username: string, password: string) {
+    demoLoading.value = username;
+    router.post(store(), { username, password, remember: true }, {
+        onFinish: () => {
+            demoLoading.value = null;
+        },
+    });
+}
 </script>
 
 <template>
@@ -21,6 +34,29 @@ defineProps<{
         description="Enter your username or FIN and password below to log in"
     >
         <Head title="Log in" />
+
+        <div
+            v-if="page.props.demo"
+            class="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950"
+        >
+            <p class="mb-3 text-center text-sm font-semibold text-blue-800 dark:text-blue-200">
+                Demo Mode
+            </p>
+            <div class="flex gap-2">
+                <Button
+                    v-for="account in page.props.demo"
+                    :key="account.username"
+                    type="button"
+                    variant="outline"
+                    class="flex-1"
+                    :disabled="demoLoading !== null"
+                    @click="demoLogin(account.username, account.password)"
+                >
+                    <Spinner v-if="demoLoading === account.username" />
+                    Log in as {{ account.label }}
+                </Button>
+            </div>
+        </div>
 
         <div
             v-if="status"

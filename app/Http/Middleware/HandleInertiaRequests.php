@@ -45,6 +45,7 @@ class HandleInertiaRequests extends Middleware
                 ) : null,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'demo' => config('demo.enabled') ? config('demo.accounts') : false,
         ];
     }
 }

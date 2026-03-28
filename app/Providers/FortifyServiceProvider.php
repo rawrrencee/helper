@@ -57,5 +57,9 @@ class FortifyServiceProvider extends ServiceProvider
 
             return Limit::perMinute(5)->by($throttleKey);
         });
+
+        if (config('demo.enabled')) {
+            RateLimiter::for('demo-web', fn (Request $request) => Limit::perMinute(120)->by($request->ip()));
+        }
     }
 }

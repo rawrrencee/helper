@@ -2,9 +2,12 @@
 
 namespace App\Providers;
 
+use App\Listeners\RecordDemoLogin;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -24,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureDemoMode();
     }
 
     /**
@@ -46,5 +50,15 @@ class AppServiceProvider extends ServiceProvider
                 ->uncompromised()
             : null,
         );
+    }
+
+    /**
+     * Configure demo mode event listeners.
+     */
+    protected function configureDemoMode(): void
+    {
+        if (config('demo.enabled')) {
+            Event::listen(Login::class, RecordDemoLogin::class);
+        }
     }
 }
