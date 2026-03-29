@@ -88,6 +88,9 @@ class ClaimController extends Controller
             'screenshotUrl' => $claim->screenshot_path
                 ? route('claims.screenshot', $claim)
                 : null,
+            'paymentScreenshotUrl' => $claim->payment_screenshot_path
+                ? route('claims.payment-screenshot', $claim)
+                : null,
         ]);
     }
 
@@ -96,6 +99,16 @@ class ClaimController extends Controller
      */
     public function update(UpdateClaimRequest $request, Claim $claim): RedirectResponse
     {
+        if (
+            $request->has('status')
+            && $request->input('status') !== 'approved'
+            && $claim->status === 'approved'
+            && $claim->payment_screenshot_path
+        ) {
+            Storage::disk('local')->delete($claim->payment_screenshot_path);
+            $claim->payment_screenshot_path = null;
+        }
+
         $claim->update($request->validated());
 
         return back()->with('success', 'Claim updated.');
@@ -110,6 +123,10 @@ class ClaimController extends Controller
 
         if ($claim->screenshot_path) {
             Storage::disk('local')->delete($claim->screenshot_path);
+        }
+
+        if ($claim->payment_screenshot_path) {
+            Storage::disk('local')->delete($claim->payment_screenshot_path);
         }
 
         $claim->delete();
@@ -127,5 +144,38 @@ class ClaimController extends Controller
         abort_unless($claim->screenshot_path, 404);
 
         return response()->file(Storage::disk('local')->path($claim->screenshot_path));
+    }
+
+    /**
+     * Upload a payment screenshot for an approved claim.
+     */
+    public function uploadPaymentScreenshot(Request $request, Claim $claim): RedirectResponse
+    {
+        $this->authorize('update', $claim);
+
+        $request->validate([
+            'screenshot' => ['required', 'file', 'mimes:jpg,jpeg,png,gif,webp,heic,heif', 'max:20480'],
+        ]);
+
+        if ($claim->payment_screenshot_path) {
+            Storage::disk('local')->delete($claim->payment_screenshot_path);
+        }
+
+        $path = $request->file('screenshot')->store("claim-payment-screenshots/{$claim->helper_id}", 'local');
+        $claim->update(['payment_screenshot_path' => $path]);
+
+        return back()->with('success', 'Payment screenshot uploaded.');
+    }
+
+    /**
+     * Serve the claim payment screenshot file.
+     */
+    public function paymentScreenshot(Claim $claim): BinaryFileResponse
+    {
+        $this->authorize('view', $claim);
+
+        abort_unless($claim->payment_screenshot_path, 404);
+
+        return response()->file(Storage::disk('local')->path($claim->payment_screenshot_path));
     }
 }

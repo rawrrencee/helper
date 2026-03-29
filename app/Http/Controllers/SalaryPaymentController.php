@@ -69,7 +69,7 @@ class SalaryPaymentController extends Controller
         $helpers = Helper::query()->orderBy('name')->get(['id', 'name', 'monthly_salary', 'round_up_rest_day_rate']);
 
         $claims = Claim::query()
-            ->whereIn('status', ['approved', 'pending'])
+            ->whereIn('status', ['approved', 'pending', 'rejected'])
             ->with('salaryPayments:id')
             ->get()
             ->groupBy(fn ($c) => "{$c->helper_id}-{$c->month}-{$c->year}");
@@ -90,15 +90,29 @@ class SalaryPaymentController extends Controller
      */
     public function store(StoreSalaryPaymentRequest $request): RedirectResponse
     {
-        $payment = SalaryPayment::create($request->safe()->except(['screenshot', 'claim_ids']));
+        $payment = SalaryPayment::create($request->safe()->except(['screenshot', 'claims']));
 
         if ($request->hasFile('screenshot')) {
             $path = $request->file('screenshot')->store("screenshots/{$payment->helper_id}", 'local');
             $payment->update(['payment_screenshot_path' => $path]);
         }
 
-        if ($request->input('claim_ids')) {
-            $payment->claims()->sync($request->input('claim_ids'));
+        if ($request->input('claims')) {
+            $syncData = [];
+
+            foreach ($request->input('claims') as $claimData) {
+                $syncData[$claimData['id']] = [
+                    'paid_separately' => $claimData['paid_separately'],
+                    'payment_method' => $claimData['paid_separately'] ? $claimData['payment_method'] : null,
+                ];
+
+                Claim::query()
+                    ->where('id', $claimData['id'])
+                    ->where('status', 'pending')
+                    ->update(['status' => 'approved']);
+            }
+
+            $payment->claims()->sync($syncData);
         }
 
         return to_route('salary-payments.index')->with('success', 'Salary payment created.');
@@ -111,13 +125,21 @@ class SalaryPaymentController extends Controller
     {
         $this->authorize('view', $salaryPayment);
 
-        $salaryPayment->load('helper');
+        $salaryPayment->load('helper', 'claims');
+
+        $claimScreenshots = $salaryPayment->claims->mapWithKeys(fn (Claim $claim) => [
+            $claim->id => [
+                'evidence' => $claim->screenshot_path ? route('claims.screenshot', $claim) : null,
+                'payment' => $claim->payment_screenshot_path ? route('claims.payment-screenshot', $claim) : null,
+            ],
+        ]);
 
         return Inertia::render('salary-payments/Show', [
             'payment' => $salaryPayment,
             'screenshotUrl' => $salaryPayment->payment_screenshot_path
                 ? route('salary-payments.screenshot', $salaryPayment)
                 : null,
+            'claimScreenshots' => $claimScreenshots,
         ]);
     }
 
@@ -128,7 +150,15 @@ class SalaryPaymentController extends Controller
     {
         $this->authorize('update', $salaryPayment);
 
-        $salaryPayment->load('helper');
+        $salaryPayment->load('helper', 'claims');
+
+        $claims = Claim::query()
+            ->where('helper_id', $salaryPayment->helper_id)
+            ->where('month', $salaryPayment->month)
+            ->where('year', $salaryPayment->year)
+            ->whereIn('status', ['approved', 'pending', 'rejected'])
+            ->with('salaryPayments:id')
+            ->get();
 
         return Inertia::render('salary-payments/Edit', [
             'payment' => $salaryPayment,
@@ -140,6 +170,7 @@ class SalaryPaymentController extends Controller
                 ->where('id', '!=', $salaryPayment->id)
                 ->select('month', 'year')->get()
                 ->map(fn ($p) => ['month' => $p->month, 'year' => $p->year]),
+            'claims' => $claims,
         ]);
     }
 
@@ -148,7 +179,7 @@ class SalaryPaymentController extends Controller
      */
     public function update(UpdateSalaryPaymentRequest $request, SalaryPayment $salaryPayment): RedirectResponse
     {
-        $salaryPayment->update($request->safe()->except('screenshot'));
+        $salaryPayment->update($request->safe()->except(['screenshot', 'claims']));
 
         if ($request->hasFile('screenshot')) {
             if ($salaryPayment->payment_screenshot_path) {
@@ -156,6 +187,26 @@ class SalaryPaymentController extends Controller
             }
             $path = $request->file('screenshot')->store("screenshots/{$salaryPayment->helper_id}", 'local');
             $salaryPayment->update(['payment_screenshot_path' => $path]);
+        }
+
+        if ($request->has('claims')) {
+            $syncData = [];
+
+            if ($request->input('claims')) {
+                foreach ($request->input('claims') as $claimData) {
+                    $syncData[$claimData['id']] = [
+                        'paid_separately' => $claimData['paid_separately'],
+                        'payment_method' => $claimData['paid_separately'] ? $claimData['payment_method'] : null,
+                    ];
+
+                    Claim::query()
+                        ->where('id', $claimData['id'])
+                        ->where('status', 'pending')
+                        ->update(['status' => 'approved']);
+                }
+            }
+
+            $salaryPayment->claims()->sync($syncData);
         }
 
         return to_route('salary-payments.show', $salaryPayment)->with('success', 'Salary payment updated.');
@@ -213,7 +264,7 @@ class SalaryPaymentController extends Controller
     {
         $this->authorize('view', $salaryPayment);
 
-        $salaryPayment->load('helper');
+        $salaryPayment->load('helper', 'claims');
 
         $pdf = Pdf::loadView('pdf.salary-slip', [
             'payment' => $salaryPayment,

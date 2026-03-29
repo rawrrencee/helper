@@ -55,6 +55,6 @@ class SalaryPayment extends Model
      */
     public function claims(): BelongsToMany
     {
-        return $this->belongsToMany(Claim::class)->withTimestamps();
+        return $this->belongsToMany(Claim::class)->withPivot('paid_separately', 'payment_method')->withTimestamps();
     }
 }

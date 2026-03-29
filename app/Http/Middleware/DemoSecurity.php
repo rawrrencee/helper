@@ -52,7 +52,7 @@ class DemoSecurity
 
         if ($routeName && in_array($routeName, $this->blockedRoutes, true)) {
             if ($request->wantsJson() || $request->header('X-Inertia')) {
-                return back()->with('error', 'This action is disabled in demo mode.');
+                return back()->withErrors(['demo' => 'This action is disabled in demo mode.']);
             }
 
             abort(403, 'This action is disabled in demo mode.');
@@ -60,7 +60,7 @@ class DemoSecurity
 
         if ($routeName && in_array($routeName, $this->noUploadRoutes, true) && $request->allFiles()) {
             if ($request->wantsJson() || $request->header('X-Inertia')) {
-                return back()->with('error', 'File uploads are disabled in demo mode.');
+                return back()->withErrors(['demo' => 'File uploads are disabled in demo mode.']);
             }
 
             abort(403, 'File uploads are disabled in demo mode.');

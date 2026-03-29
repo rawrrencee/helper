@@ -149,13 +149,16 @@ test('claim can be linked to salary payment via pivot', function () {
             'extra_rest_day_pay' => 0,
             'total_amount' => 650,
             'payment_method' => 'bank_transfer',
-            'claim_ids' => [$claim->id],
+            'claims' => [
+                ['id' => $claim->id, 'paid_separately' => false, 'payment_method' => null],
+            ],
         ])
         ->assertRedirect('/salary-payments');
 
     $payment = SalaryPayment::query()->where('helper_id', $helper->id)->first();
     expect($payment->claims)->toHaveCount(1);
     expect($payment->claims->first()->id)->toBe($claim->id);
+    expect((bool) $payment->claims->first()->pivot->paid_separately)->toBeFalse();
 });
 
 test('claim with screenshot stores file', function () {
@@ -179,4 +182,102 @@ test('claim with screenshot stores file', function () {
     expect(Storage::disk('local')->exists($claim->screenshot_path))->toBeTrue();
 
     Storage::disk('local')->delete($claim->screenshot_path);
+});
+
+test('admin can upload payment screenshot for approved claim', function () {
+    $admin = User::factory()->admin()->create();
+    $claim = Claim::factory()->approved()->create();
+    $file = UploadedFile::fake()->image('payment.jpg', 400, 300);
+
+    $this->actingAs($admin)
+        ->post("/claims/{$claim->id}/payment-screenshot", ['screenshot' => $file])
+        ->assertRedirect();
+
+    $claim->refresh();
+    expect($claim->payment_screenshot_path)->not->toBeNull();
+    expect(Storage::disk('local')->exists($claim->payment_screenshot_path))->toBeTrue();
+
+    Storage::disk('local')->delete($claim->payment_screenshot_path);
+});
+
+test('admin can serve payment screenshot', function () {
+    $admin = User::factory()->admin()->create();
+    $helper = Helper::factory()->create();
+    $file = UploadedFile::fake()->image('payment.png', 400, 300);
+    $path = $file->store("claim-payment-screenshots/{$helper->id}", 'local');
+
+    $claim = Claim::factory()->approved()->create([
+        'helper_id' => $helper->id,
+        'payment_screenshot_path' => $path,
+    ]);
+
+    $this->actingAs($admin)
+        ->get("/claims/{$claim->id}/payment-screenshot")
+        ->assertOk();
+
+    Storage::disk('local')->delete($path);
+});
+
+test('payment screenshot returns 404 when none exists', function () {
+    $admin = User::factory()->admin()->create();
+    $claim = Claim::factory()->approved()->create(['payment_screenshot_path' => null]);
+
+    $this->actingAs($admin)
+        ->get("/claims/{$claim->id}/payment-screenshot")
+        ->assertNotFound();
+});
+
+test('deleting claim also removes payment screenshot', function () {
+    $admin = User::factory()->admin()->create();
+    $helper = Helper::factory()->create();
+    $file = UploadedFile::fake()->image('payment.png', 400, 300);
+    $path = $file->store("claim-payment-screenshots/{$helper->id}", 'local');
+
+    $claim = Claim::factory()->approved()->create([
+        'helper_id' => $helper->id,
+        'payment_screenshot_path' => $path,
+    ]);
+
+    expect(Storage::disk('local')->exists($path))->toBeTrue();
+
+    $this->actingAs($admin)
+        ->delete("/claims/{$claim->id}")
+        ->assertRedirect('/claims');
+
+    expect(Storage::disk('local')->exists($path))->toBeFalse();
+});
+
+test('payment proof is deleted when claim status changes from approved', function () {
+    $admin = User::factory()->admin()->create();
+    $helper = Helper::factory()->create();
+    $file = UploadedFile::fake()->image('payment.png', 400, 300);
+    $path = $file->store("claim-payment-screenshots/{$helper->id}", 'local');
+
+    $claim = Claim::factory()->approved()->create([
+        'helper_id' => $helper->id,
+        'payment_screenshot_path' => $path,
+    ]);
+
+    expect(Storage::disk('local')->exists($path))->toBeTrue();
+
+    $this->actingAs($admin)
+        ->put("/claims/{$claim->id}", ['status' => 'pending'])
+        ->assertRedirect();
+
+    $claim->refresh();
+    expect($claim->payment_screenshot_path)->toBeNull();
+    expect(Storage::disk('local')->exists($path))->toBeFalse();
+});
+
+test('show page includes payment screenshot url for approved claims', function () {
+    $admin = User::factory()->admin()->create();
+    $claim = Claim::factory()->approved()->create();
+
+    $this->actingAs($admin)
+        ->get("/claims/{$claim->id}")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('claims/Show')
+            ->has('paymentScreenshotUrl')
+        );
 });

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Claim;
 use App\Models\Helper;
 use App\Models\SalaryPayment;
 use App\Models\User;
@@ -466,5 +467,286 @@ test('edit page passes existing payments and screenshot url', function () {
             ->component('salary-payments/Edit')
             ->has('existingPayments')
             ->has('screenshotUrl')
+        );
+});
+
+test('pivot data stores paid_separately and payment_method', function () {
+    $admin = User::factory()->admin()->create();
+    $helper = Helper::factory()->create();
+    $claim1 = Claim::factory()->approved()->create(['helper_id' => $helper->id]);
+    $claim2 = Claim::factory()->approved()->create(['helper_id' => $helper->id]);
+
+    $this->actingAs($admin)
+        ->post('/salary-payments', [
+            'helper_id' => $helper->id,
+            'month' => 5,
+            'year' => 2026,
+            'base_salary' => 600,
+            'total_calendar_days' => 31,
+            'sundays_in_period' => 5,
+            'pro_rated_amount' => 600,
+            'extra_rest_days_worked' => 0,
+            'rest_day_rate' => 23.08,
+            'extra_rest_day_pay' => 0,
+            'total_amount' => 650,
+            'payment_method' => 'bank_transfer',
+            'claims' => [
+                ['id' => $claim1->id, 'paid_separately' => false, 'payment_method' => null],
+                ['id' => $claim2->id, 'paid_separately' => true, 'payment_method' => 'cash'],
+            ],
+        ])
+        ->assertRedirect('/salary-payments');
+
+    $payment = SalaryPayment::query()->where('helper_id', $helper->id)->where('month', 5)->first();
+    $claims = $payment->claims->sortBy('id');
+
+    expect($claims)->toHaveCount(2);
+    expect((bool) $claims->first()->pivot->paid_separately)->toBeFalse();
+    expect($claims->first()->pivot->payment_method)->toBeNull();
+    expect((bool) $claims->last()->pivot->paid_separately)->toBeTrue();
+    expect($claims->last()->pivot->payment_method)->toBe('cash');
+});
+
+test('pending claims are auto-approved when added to salary payment', function () {
+    $admin = User::factory()->admin()->create();
+    $helper = Helper::factory()->create();
+    $pendingClaim = Claim::factory()->create(['helper_id' => $helper->id, 'status' => 'pending']);
+
+    $this->actingAs($admin)
+        ->post('/salary-payments', [
+            'helper_id' => $helper->id,
+            'month' => 6,
+            'year' => 2026,
+            'base_salary' => 600,
+            'total_calendar_days' => 30,
+            'sundays_in_period' => 4,
+            'pro_rated_amount' => 600,
+            'extra_rest_days_worked' => 0,
+            'rest_day_rate' => 23.08,
+            'extra_rest_day_pay' => 0,
+            'total_amount' => 650,
+            'payment_method' => 'bank_transfer',
+            'claims' => [
+                ['id' => $pendingClaim->id, 'paid_separately' => false, 'payment_method' => null],
+            ],
+        ])
+        ->assertRedirect('/salary-payments');
+
+    expect($pendingClaim->fresh()->status)->toBe('approved');
+});
+
+test('pending claims paid separately are also auto-approved', function () {
+    $admin = User::factory()->admin()->create();
+    $helper = Helper::factory()->create();
+    $pendingClaim = Claim::factory()->create(['helper_id' => $helper->id, 'status' => 'pending']);
+
+    $this->actingAs($admin)
+        ->post('/salary-payments', [
+            'helper_id' => $helper->id,
+            'month' => 7,
+            'year' => 2026,
+            'base_salary' => 600,
+            'total_calendar_days' => 31,
+            'sundays_in_period' => 4,
+            'pro_rated_amount' => 600,
+            'extra_rest_days_worked' => 0,
+            'rest_day_rate' => 23.08,
+            'extra_rest_day_pay' => 0,
+            'total_amount' => 600,
+            'payment_method' => 'bank_transfer',
+            'claims' => [
+                ['id' => $pendingClaim->id, 'paid_separately' => true, 'payment_method' => 'paynow'],
+            ],
+        ])
+        ->assertRedirect('/salary-payments');
+
+    expect($pendingClaim->fresh()->status)->toBe('approved');
+});
+
+test('show page includes claims', function () {
+    $admin = User::factory()->admin()->create();
+    $helper = Helper::factory()->create();
+    $payment = SalaryPayment::factory()->create(['helper_id' => $helper->id]);
+    $claim = Claim::factory()->approved()->create(['helper_id' => $helper->id]);
+    $payment->claims()->attach($claim->id, ['paid_separately' => false]);
+
+    $this->actingAs($admin)
+        ->get("/salary-payments/{$payment->id}")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('salary-payments/Show')
+            ->has('payment.claims', 1)
+        );
+});
+
+test('pdf includes claims', function () {
+    $admin = User::factory()->admin()->create();
+    $helper = Helper::factory()->create();
+    $payment = SalaryPayment::factory()->create(['helper_id' => $helper->id]);
+    $claim = Claim::factory()->approved()->create(['helper_id' => $helper->id, 'title' => 'Groceries']);
+    $payment->claims()->attach($claim->id, ['paid_separately' => false]);
+
+    $this->actingAs($admin)
+        ->get("/salary-payments/{$payment->id}/pdf")
+        ->assertOk()
+        ->assertHeader('content-type', 'application/pdf');
+});
+
+test('admin can update claims on a salary payment', function () {
+    $admin = User::factory()->admin()->create();
+    $helper = Helper::factory()->create();
+    $payment = SalaryPayment::factory()->create([
+        'helper_id' => $helper->id,
+        'month' => 3,
+        'year' => 2026,
+    ]);
+    $claim1 = Claim::factory()->approved()->create(['helper_id' => $helper->id, 'month' => 3, 'year' => 2026]);
+    $claim2 = Claim::factory()->approved()->create(['helper_id' => $helper->id, 'month' => 3, 'year' => 2026]);
+    $claim3 = Claim::factory()->approved()->create(['helper_id' => $helper->id, 'month' => 3, 'year' => 2026]);
+
+    // Attach claim1 initially
+    $payment->claims()->attach($claim1->id, ['paid_separately' => false]);
+
+    // Update: remove claim1, add claim2 and claim3
+    $this->actingAs($admin)
+        ->put("/salary-payments/{$payment->id}", [
+            'month' => 3,
+            'year' => 2026,
+            'base_salary' => 600,
+            'total_calendar_days' => 31,
+            'sundays_in_period' => 5,
+            'pro_rated_amount' => 600,
+            'extra_rest_days_worked' => 0,
+            'rest_day_rate' => 23.08,
+            'extra_rest_day_pay' => 0,
+            'total_amount' => 650,
+            'payment_method' => 'bank_transfer',
+            'claims' => [
+                ['id' => $claim2->id, 'paid_separately' => false, 'payment_method' => null],
+                ['id' => $claim3->id, 'paid_separately' => true, 'payment_method' => 'cash'],
+            ],
+        ])
+        ->assertRedirect("/salary-payments/{$payment->id}");
+
+    $updatedClaims = $payment->fresh()->claims->sortBy('id');
+    expect($updatedClaims)->toHaveCount(2);
+    expect($updatedClaims->pluck('id')->values()->all())->toEqual([$claim2->id, $claim3->id]);
+    expect((bool) $updatedClaims->last()->pivot->paid_separately)->toBeTrue();
+    expect($updatedClaims->last()->pivot->payment_method)->toBe('cash');
+});
+
+test('edit page passes claims for the payment month', function () {
+    $admin = User::factory()->admin()->create();
+    $helper = Helper::factory()->create();
+    $payment = SalaryPayment::factory()->create(['helper_id' => $helper->id, 'month' => 3, 'year' => 2026]);
+    Claim::factory()->approved()->create(['helper_id' => $helper->id, 'month' => 3, 'year' => 2026]);
+
+    $this->actingAs($admin)
+        ->get("/salary-payments/{$payment->id}/edit")
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('salary-payments/Edit')
+            ->has('claims', 1)
+        );
+});
+
+test('pending claims are auto-approved when added via update', function () {
+    $admin = User::factory()->admin()->create();
+    $helper = Helper::factory()->create();
+    $payment = SalaryPayment::factory()->create([
+        'helper_id' => $helper->id,
+        'month' => 8,
+        'year' => 2026,
+    ]);
+    $pendingClaim = Claim::factory()->create(['helper_id' => $helper->id, 'status' => 'pending']);
+
+    $this->actingAs($admin)
+        ->put("/salary-payments/{$payment->id}", [
+            'month' => 8,
+            'year' => 2026,
+            'base_salary' => 600,
+            'total_calendar_days' => 31,
+            'sundays_in_period' => 5,
+            'pro_rated_amount' => 600,
+            'extra_rest_days_worked' => 0,
+            'rest_day_rate' => 23.08,
+            'extra_rest_day_pay' => 0,
+            'total_amount' => 650,
+            'payment_method' => 'bank_transfer',
+            'claims' => [
+                ['id' => $pendingClaim->id, 'paid_separately' => false, 'payment_method' => null],
+            ],
+        ])
+        ->assertRedirect("/salary-payments/{$payment->id}");
+
+    expect($pendingClaim->fresh()->status)->toBe('approved');
+});
+
+test('claim paid separately without payment method fails validation on store', function () {
+    $admin = User::factory()->admin()->create();
+    $helper = Helper::factory()->create();
+    $claim = Claim::factory()->approved()->create(['helper_id' => $helper->id]);
+
+    $this->actingAs($admin)
+        ->post('/salary-payments', [
+            'helper_id' => $helper->id,
+            'month' => 9,
+            'year' => 2026,
+            'base_salary' => 600,
+            'total_calendar_days' => 30,
+            'sundays_in_period' => 4,
+            'pro_rated_amount' => 600,
+            'extra_rest_days_worked' => 0,
+            'rest_day_rate' => 23.08,
+            'extra_rest_day_pay' => 0,
+            'total_amount' => 600,
+            'payment_method' => 'bank_transfer',
+            'claims' => [
+                ['id' => $claim->id, 'paid_separately' => true, 'payment_method' => null],
+            ],
+        ])
+        ->assertSessionHasErrors(['claims.0.payment_method']);
+});
+
+test('claim paid separately without payment method fails validation on update', function () {
+    $admin = User::factory()->admin()->create();
+    $helper = Helper::factory()->create();
+    $payment = SalaryPayment::factory()->create([
+        'helper_id' => $helper->id,
+        'month' => 9,
+        'year' => 2026,
+    ]);
+    $claim = Claim::factory()->approved()->create(['helper_id' => $helper->id]);
+
+    $this->actingAs($admin)
+        ->put("/salary-payments/{$payment->id}", [
+            'month' => 9,
+            'year' => 2026,
+            'base_salary' => 600,
+            'total_calendar_days' => 30,
+            'sundays_in_period' => 4,
+            'pro_rated_amount' => 600,
+            'extra_rest_days_worked' => 0,
+            'rest_day_rate' => 23.08,
+            'extra_rest_day_pay' => 0,
+            'total_amount' => 600,
+            'payment_method' => 'bank_transfer',
+            'claims' => [
+                ['id' => $claim->id, 'paid_separately' => true, 'payment_method' => null],
+            ],
+        ])
+        ->assertSessionHasErrors(['claims.0.payment_method']);
+});
+
+test('create page includes rejected claims', function () {
+    $admin = User::factory()->admin()->create();
+    $helper = Helper::factory()->create();
+    Claim::factory()->rejected()->create(['helper_id' => $helper->id]);
+
+    $this->actingAs($admin)
+        ->get('/salary-payments/create')
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->has('claims')
         );
 });

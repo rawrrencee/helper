@@ -32,11 +32,19 @@ type Payment = {
     paid_at: string | null;
     notes: string | null;
     helper: { id: number; name: string; fin: string };
+    claims: {
+        id: number;
+        title: string;
+        amount: string;
+        status: string;
+        pivot: { paid_separately: boolean; payment_method: string | null };
+    }[];
 };
 
 const props = defineProps<{
     payment: Payment;
     screenshotUrl: string | null;
+    claimScreenshots: Record<number, { evidence: string | null; payment: string | null }>;
 }>();
 
 const page = usePage();
@@ -52,6 +60,18 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: `${months[props.payment.month - 1]} ${props.payment.year}`, href: `/salary-payments/${props.payment.id}` },
 ];
 
+const claimsWithSalary = computed(() => props.payment.claims?.filter(c => !c.pivot.paid_separately) ?? []);
+const claimsPaidSeparately = computed(() => props.payment.claims?.filter(c => c.pivot.paid_separately) ?? []);
+
+function formatPaymentMethod(method: string | null): string {
+    switch (method) {
+        case 'cash': return 'Cash';
+        case 'bank_transfer': return 'Bank Transfer';
+        case 'paynow': return 'PayNow';
+        default: return method ?? '';
+    }
+}
+
 function uploadScreenshot(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
@@ -62,6 +82,11 @@ function uploadScreenshot(event: Event) {
     router.post(`/salary-payments/${props.payment.id}/screenshot`, formData, {
         forceFormData: true,
         onSuccess: () => toast.add({ severity: 'success', summary: 'Uploaded', detail: 'Screenshot uploaded.', life: 3000 }),
+        onError: (errors: Record<string, string>) => {
+            if (errors.demo) {
+                toast.add({ severity: 'warn', summary: 'Demo Mode', detail: errors.demo, life: 3000 });
+            }
+        },
     });
 }
 </script>
@@ -130,10 +155,54 @@ function uploadScreenshot(event: Event) {
                                 <span class="font-medium">${{ Number(item.amount).toFixed(2) }}</span>
                             </div>
                         </template>
+                        <template v-if="claimsWithSalary.length > 0">
+                            <div v-for="claim in claimsWithSalary" :key="claim.id" class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-muted-foreground">
+                                        <a :href="`/claims/${claim.id}`" class="hover:underline">Claim: {{ claim.title }}</a>
+                                    </span>
+                                    <span class="font-medium">${{ Number(claim.amount).toFixed(2) }}</span>
+                                </div>
+                                <div v-if="claimScreenshots[claim.id]?.evidence || claimScreenshots[claim.id]?.payment" class="flex gap-4 pl-4">
+                                    <div v-if="claimScreenshots[claim.id]?.evidence">
+                                        <p class="mb-1 text-xs text-muted-foreground">Evidence</p>
+                                        <Image :src="claimScreenshots[claim.id].evidence!" preview imageClass="max-h-32 rounded border" />
+                                    </div>
+                                    <div v-if="claimScreenshots[claim.id]?.payment">
+                                        <p class="mb-1 text-xs text-muted-foreground">Payment Proof</p>
+                                        <Image :src="claimScreenshots[claim.id].payment!" preview imageClass="max-h-32 rounded border" />
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
                         <div class="flex justify-between border-t pt-3 text-lg font-semibold">
                             <span>Total</span>
                             <span>${{ Number(payment.total_amount).toFixed(2) }}</span>
                         </div>
+                        <template v-if="claimsPaidSeparately.length > 0">
+                            <div class="border-t pt-3">
+                                <p class="mb-2 text-sm font-medium text-muted-foreground">Paid Separately</p>
+                                <div v-for="claim in claimsPaidSeparately" :key="claim.id" class="mb-2 space-y-2 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-muted-foreground">
+                                            <a :href="`/claims/${claim.id}`" class="hover:underline">{{ claim.title }}</a>
+                                            <span v-if="claim.pivot.payment_method" class="ml-1">({{ formatPaymentMethod(claim.pivot.payment_method) }})</span>
+                                        </span>
+                                        <span class="font-medium">${{ Number(claim.amount).toFixed(2) }}</span>
+                                    </div>
+                                    <div v-if="claimScreenshots[claim.id]?.evidence || claimScreenshots[claim.id]?.payment" class="flex gap-4 pl-4">
+                                        <div v-if="claimScreenshots[claim.id]?.evidence">
+                                            <p class="mb-1 text-xs text-muted-foreground">Evidence</p>
+                                            <Image :src="claimScreenshots[claim.id].evidence!" preview imageClass="max-h-32 rounded border" />
+                                        </div>
+                                        <div v-if="claimScreenshots[claim.id]?.payment">
+                                            <p class="mb-1 text-xs text-muted-foreground">Payment Proof</p>
+                                            <Image :src="claimScreenshots[claim.id].payment!" preview imageClass="max-h-32 rounded border" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
                     </div>
                 </section>
 

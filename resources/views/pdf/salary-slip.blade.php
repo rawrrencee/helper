@@ -79,6 +79,9 @@
             <tr><td>{{ $adHoc['description'] }}</td><td>${{ number_format($adHoc['amount'], 2) }}</td></tr>
             @endforeach
             @endif
+            @foreach($payment->claims->where('pivot.paid_separately', false) as $claim)
+            <tr><td>Claim: {{ $claim->title }}</td><td>${{ number_format($claim->amount, 2) }}</td></tr>
+            @endforeach
             <tr class="total-row"><td>Total Amount</td><td>${{ number_format($payment->total_amount, 2) }}</td></tr>
         </table>
     </div>
@@ -95,6 +98,47 @@
             @endif
         </table>
     </div>
+
+    @if($payment->claims->where('pivot.paid_separately', true)->count() > 0)
+    <div class="section" style="page-break-before: always;">
+        <h3>Claims Paid Separately</h3>
+        <table>
+            @foreach($payment->claims->where('pivot.paid_separately', true) as $claim)
+            @php
+                $methodLabel = match($claim->pivot->payment_method) {
+                    'cash' => 'Cash',
+                    'bank_transfer' => 'Bank Transfer',
+                    'paynow' => 'PayNow',
+                    default => $claim->pivot->payment_method,
+                };
+            @endphp
+            <tr><td>{{ $claim->title }} ({{ $methodLabel }})</td><td>${{ number_format($claim->amount, 2) }}</td></tr>
+            @endforeach
+        </table>
+    </div>
+    @endif
+
+    @if($payment->claims->contains(fn ($c) => $c->screenshot_path || $c->payment_screenshot_path))
+    <div class="section">
+        <h3>Claim Evidence</h3>
+        @foreach($payment->claims as $claim)
+            @if($claim->screenshot_path)
+            <div style="page-break-inside: avoid; margin-bottom: 10px;">
+                <p style="margin: 0 0 4px; font-weight: bold;">{{ $claim->title }} — Receipt/Evidence</p>
+                <img src="{{ Storage::disk('local')->path($claim->screenshot_path) }}"
+                     style="max-width: 100%; max-height: 300px;" />
+            </div>
+            @endif
+            @if($claim->payment_screenshot_path)
+            <div style="page-break-inside: avoid; margin-bottom: 10px;">
+                <p style="margin: 0 0 4px; font-weight: bold;">{{ $claim->title }} — Payment Proof</p>
+                <img src="{{ Storage::disk('local')->path($claim->payment_screenshot_path) }}"
+                     style="max-width: 100%; max-height: 300px;" />
+            </div>
+            @endif
+        @endforeach
+    </div>
+    @endif
 
     @if($payment->payment_screenshot_path)
     <div class="section" style="page-break-inside: avoid;">

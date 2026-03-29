@@ -71,7 +71,13 @@ function handleScreenshot(event: Event) {
 
 function submit() {
     form.post('/claims', {
+        forceFormData: true,
         onSuccess: () => toast.add({ severity: 'success', summary: 'Submitted', detail: 'Claim submitted.', life: 3000 }),
+        onError: (errors) => {
+            if (errors.demo) {
+                toast.add({ severity: 'warn', summary: 'Demo Mode', detail: errors.demo, life: 3000 });
+            }
+        },
     });
 }
 </script>

@@ -27,6 +27,7 @@ type Claim = {
 const props = defineProps<{
     claim: Claim;
     screenshotUrl: string | null;
+    paymentScreenshotUrl: string | null;
 }>();
 
 const page = usePage();
@@ -59,6 +60,19 @@ function confirmDelete() {
     if (confirm(`Delete claim "${props.claim.title}"?`)) {
         router.delete(`/claims/${props.claim.id}`);
     }
+}
+
+function uploadPaymentScreenshot(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('screenshot', file);
+
+    router.post(`/claims/${props.claim.id}/payment-screenshot`, formData, {
+        forceFormData: true,
+        onSuccess: () => toast.add({ severity: 'success', summary: 'Uploaded', detail: 'Payment screenshot uploaded.', life: 3000 }),
+    });
 }
 </script>
 
@@ -104,8 +118,22 @@ function confirmDelete() {
             </section>
 
             <section v-if="screenshotUrl" class="rounded-lg border p-6">
-                <h2 class="mb-3 text-lg font-medium">Screenshot</h2>
+                <h2 class="mb-3 text-lg font-medium">Claim Evidence</h2>
                 <Image :src="screenshotUrl" preview imageClass="max-h-64 rounded border" />
+            </section>
+
+            <section v-if="claim.status === 'approved'" class="rounded-lg border p-6">
+                <h2 class="mb-3 text-lg font-medium">Payment Proof</h2>
+                <div v-if="paymentScreenshotUrl" class="mb-4">
+                    <Image :src="paymentScreenshotUrl" preview imageClass="max-h-64 rounded border" />
+                </div>
+                <p v-else class="mb-4 text-sm text-muted-foreground">No payment screenshot uploaded yet.</p>
+                <div v-if="isAdmin">
+                    <input ref="paymentScreenshotInput" type="file" accept="image/*,.heic,.heif" @change="uploadPaymentScreenshot" class="hidden" />
+                    <Button variant="outline" size="sm" @click="($refs.paymentScreenshotInput as HTMLInputElement).click()">
+                        <i class="pi pi-upload mr-1" /> {{ paymentScreenshotUrl ? 'Replace Screenshot' : 'Upload Screenshot' }}
+                    </Button>
+                </div>
             </section>
 
             <div v-if="isAdmin" class="flex gap-2">

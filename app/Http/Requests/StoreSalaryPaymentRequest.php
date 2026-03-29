@@ -48,8 +48,10 @@ class StoreSalaryPaymentRequest extends FormRequest
             'payment_method' => ['required', 'in:bank_transfer,paynow'],
             'paid_at' => ['nullable', 'date'],
             'notes' => ['nullable', 'string', 'max:1000'],
-            'claim_ids' => ['nullable', 'array'],
-            'claim_ids.*' => ['exists:claims,id'],
+            'claims' => ['nullable', 'array'],
+            'claims.*.id' => ['required', 'exists:claims,id'],
+            'claims.*.paid_separately' => ['required', 'boolean'],
+            'claims.*.payment_method' => ['nullable', 'required_if:claims.*.paid_separately,true', 'in:cash,bank_transfer,paynow'],
         ];
     }
 
@@ -60,6 +62,7 @@ class StoreSalaryPaymentRequest extends FormRequest
     {
         return [
             'month.unique' => 'A salary payment already exists for this helper in the selected month and year.',
+            'claims.*.payment_method.required_if' => 'Payment method is required when paid separately.',
         ];
     }
 }

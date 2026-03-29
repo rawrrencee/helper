@@ -67,6 +67,11 @@ function onUpload(event: any) {
             hideFromHelper.value = false;
             toast.add({ severity: 'success', summary: 'Uploaded', detail: 'Document uploaded.', life: 3000 });
         },
+        onError: (errors: Record<string, string>) => {
+            if (errors.demo) {
+                toast.add({ severity: 'warn', summary: 'Demo Mode', detail: errors.demo, life: 3000 });
+            }
+        },
     });
 }
 

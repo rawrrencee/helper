@@ -44,6 +44,10 @@ class UpdateSalaryPaymentRequest extends FormRequest
             'ad_hoc_payments' => ['nullable', 'array', 'max:20'],
             'ad_hoc_payments.*.description' => ['required_with:ad_hoc_payments', 'string', 'max:255'],
             'ad_hoc_payments.*.amount' => ['required_with:ad_hoc_payments', 'numeric', 'min:0.01', 'max:99999.99'],
+            'claims' => ['nullable', 'array'],
+            'claims.*.id' => ['required', 'exists:claims,id'],
+            'claims.*.paid_separately' => ['required', 'boolean'],
+            'claims.*.payment_method' => ['nullable', 'required_if:claims.*.paid_separately,true', 'in:cash,bank_transfer,paynow'],
             'screenshot' => ['nullable', 'file', 'mimes:jpg,jpeg,png,gif,webp,heic,heif', 'max:20480'],
             'payment_method' => ['required', 'in:bank_transfer,paynow'],
             'paid_at' => ['nullable', 'date'],
@@ -58,6 +62,7 @@ class UpdateSalaryPaymentRequest extends FormRequest
     {
         return [
             'month.unique' => 'A salary payment already exists for this helper in the selected month and year.',
+            'claims.*.payment_method.required_if' => 'Payment method is required when paid separately.',
         ];
     }
 }

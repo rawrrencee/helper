@@ -46,6 +46,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::resource('claims', ClaimController::class)->except(['edit']);
     Route::get('claims/{claim}/screenshot', [ClaimController::class, 'screenshot'])->name('claims.screenshot');
+    Route::post('claims/{claim}/payment-screenshot', [ClaimController::class, 'uploadPaymentScreenshot'])->name('claims.upload-payment-screenshot');
+    Route::get('claims/{claim}/payment-screenshot', [ClaimController::class, 'paymentScreenshot'])->name('claims.payment-screenshot');
 
     Route::get('calendars', [CalendarController::class, 'index'])->name('calendars.index');
 

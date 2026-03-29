@@ -112,7 +112,7 @@ const form = useForm({
     rest_day_rate: 0,
     extra_rest_day_pay: 0,
     ad_hoc_payments: [] as { description: string; amount: number }[],
-    claim_ids: [] as number[],
+    claims: [] as { id: number; paid_separately: boolean; payment_method: string | null }[],
     total_amount: 0,
     payment_method: 'bank_transfer',
     paid_at: null as Date | null,
@@ -188,19 +188,60 @@ const matchingClaims = computed<ClaimItem[]>(() => {
 
 const selectedClaimsTotal = computed(() => {
     return matchingClaims.value
-        .filter(c => form.claim_ids.includes(c.id))
+        .filter(c => {
+            const entry = form.claims.find(fc => fc.id === c.id);
+            return entry && !entry.paid_separately;
+        })
+        .reduce((sum, c) => sum + Number(c.amount), 0);
+});
+
+const paidSeparatelyTotal = computed(() => {
+    return matchingClaims.value
+        .filter(c => {
+            const entry = form.claims.find(fc => fc.id === c.id);
+            return entry && entry.paid_separately;
+        })
         .reduce((sum, c) => sum + Number(c.amount), 0);
 });
 
 function toggleClaim(claimId: number) {
-    const idx = form.claim_ids.indexOf(claimId);
+    const idx = form.claims.findIndex(c => c.id === claimId);
     if (idx === -1) {
-        form.claim_ids.push(claimId);
+        form.claims.push({ id: claimId, paid_separately: false, payment_method: null });
     } else {
-        form.claim_ids.splice(idx, 1);
+        form.claims.splice(idx, 1);
     }
     recalculate();
 }
+
+function isClaimSelected(claimId: number): boolean {
+    return form.claims.some(c => c.id === claimId);
+}
+
+function getClaimEntry(claimId: number) {
+    return form.claims.find(c => c.id === claimId);
+}
+
+function getClaimFormIndex(claimId: number): number {
+    return form.claims.findIndex(c => c.id === claimId);
+}
+
+function togglePaidSeparately(claimId: number) {
+    const entry = form.claims.find(c => c.id === claimId);
+    if (entry) {
+        entry.paid_separately = !entry.paid_separately;
+        if (!entry.paid_separately) {
+            entry.payment_method = null;
+        }
+        recalculate();
+    }
+}
+
+const claimPaymentMethods = [
+    { label: 'Cash', value: 'cash' },
+    { label: 'Bank Transfer', value: 'bank_transfer' },
+    { label: 'PayNow', value: 'paynow' },
+];
 
 function approveClaimInline(claim: ClaimItem) {
     router.put(`/claims/${claim.id}`, { status: 'approved' }, {
@@ -283,7 +324,7 @@ function submit() {
         paid_at: data.paid_at ? formatDate(data.paid_at) : null,
         sundays_worked_dates: data.sundays_worked_dates.filter((d): d is Date => d !== null).map(formatDate),
         ad_hoc_payments: data.ad_hoc_payments.length > 0 ? data.ad_hoc_payments : null,
-        claim_ids: data.claim_ids.length > 0 ? data.claim_ids : null,
+        claims: data.claims.length > 0 ? data.claims : null,
     })).post('/salary-payments', {
         onSuccess: () => toast.add({ severity: 'success', summary: 'Created', detail: 'Salary payment created.', life: 3000 }),
     });
@@ -471,33 +512,67 @@ if (form.helper_id && selectedHelper.value) {
                     <p class="mb-3 text-sm text-muted-foreground">Select claims to include in this payment.</p>
 
                     <div class="space-y-3">
-                        <div v-for="claim in matchingClaims" :key="claim.id" class="flex items-center gap-3 rounded-lg border p-3">
-                            <Checkbox
-                                :modelValue="form.claim_ids.includes(claim.id)"
-                                :binary="true"
-                                @update:modelValue="toggleClaim(claim.id)"
-                            />
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center gap-2">
-                                    <span class="font-medium">{{ claim.title }}</span>
-                                    <Tag :severity="claim.status === 'approved' ? 'success' : 'warn'" :value="claim.status" class="text-xs" />
-                                    <Tag v-if="claim.salary_payments.length > 0" severity="secondary" value="Already included" class="text-xs" />
+                        <div v-for="claim in matchingClaims" :key="claim.id" class="rounded-lg border p-3">
+                            <div class="flex items-center gap-3" :class="{ 'opacity-50': claim.status === 'rejected' }">
+                                <Checkbox
+                                    v-if="claim.status !== 'rejected'"
+                                    :modelValue="isClaimSelected(claim.id)"
+                                    :binary="true"
+                                    @update:modelValue="toggleClaim(claim.id)"
+                                />
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-medium" :class="{ 'line-through': claim.status === 'rejected' }">{{ claim.title }}</span>
+                                        <Tag
+                                            :severity="claim.status === 'approved' ? 'success' : claim.status === 'rejected' ? 'danger' : 'warn'"
+                                            :value="claim.status"
+                                            class="text-xs"
+                                        />
+                                        <Tag v-if="claim.salary_payments.length > 0" severity="secondary" value="Already included" class="text-xs" />
+                                    </div>
+                                </div>
+                                <span class="font-medium" :class="{ 'line-through': claim.status === 'rejected' }">${{ Number(claim.amount).toFixed(2) }}</span>
+                                <button
+                                    v-if="claim.status === 'pending'"
+                                    type="button"
+                                    class="text-xs text-blue-600 hover:underline dark:text-blue-400"
+                                    @click="approveClaimInline(claim)"
+                                >
+                                    Approve
+                                </button>
+                            </div>
+
+                            <div v-if="isClaimSelected(claim.id)" class="mt-3 flex items-center gap-4 border-t pt-3">
+                                <label class="flex items-center gap-2 text-sm">
+                                    <Checkbox
+                                        :modelValue="getClaimEntry(claim.id)?.paid_separately ?? false"
+                                        :binary="true"
+                                        @update:modelValue="togglePaidSeparately(claim.id)"
+                                    />
+                                    Paid separately
+                                </label>
+                                <div v-if="getClaimEntry(claim.id)?.paid_separately" class="flex w-48 flex-col gap-1">
+                                    <Select
+                                        :modelValue="getClaimEntry(claim.id)?.payment_method"
+                                        @update:modelValue="(v: string) => { const e = getClaimEntry(claim.id); if (e) e.payment_method = v; }"
+                                        :options="claimPaymentMethods"
+                                        optionLabel="label"
+                                        optionValue="value"
+                                        placeholder="Payment method"
+                                        size="small"
+                                        :invalid="!!form.errors[`claims.${getClaimFormIndex(claim.id)}.payment_method` as keyof typeof form.errors]"
+                                    />
+                                    <small v-if="form.errors[`claims.${getClaimFormIndex(claim.id)}.payment_method` as keyof typeof form.errors]" class="text-red-500">
+                                        Payment method is required
+                                    </small>
                                 </div>
                             </div>
-                            <span class="font-medium">${{ Number(claim.amount).toFixed(2) }}</span>
-                            <button
-                                v-if="claim.status === 'pending'"
-                                type="button"
-                                class="text-xs text-blue-600 hover:underline dark:text-blue-400"
-                                @click="approveClaimInline(claim)"
-                            >
-                                Approve
-                            </button>
                         </div>
                     </div>
 
-                    <div v-if="form.claim_ids.length > 0" class="mt-3 text-sm text-muted-foreground">
-                        Claims subtotal: ${{ selectedClaimsTotal.toFixed(2) }}
+                    <div v-if="form.claims.length > 0" class="mt-3 space-y-1 text-sm text-muted-foreground">
+                        <div v-if="selectedClaimsTotal > 0">Included in total: ${{ selectedClaimsTotal.toFixed(2) }}</div>
+                        <div v-if="paidSeparatelyTotal > 0">Paid separately: ${{ paidSeparatelyTotal.toFixed(2) }}</div>
                     </div>
                 </section>
 
